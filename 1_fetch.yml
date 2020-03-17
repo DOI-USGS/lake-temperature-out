@@ -1,0 +1,47 @@
+
+packages:
+  - sbtools
+
+sources:
+  - 1_fetch/src/fetch_sb_item_files.R
+
+targets:
+  all:
+    depends:
+      - sb_auth
+      - 1_fetch/out/toha_irradiance_sb_files.rds
+      - 1_fetch/out/toha_irradiance_downloaded.rds
+      - 1_fetch/out/toha_temp_pred_sb_files.rds
+      - 1_fetch/out/toha_temp_pred_downloaded.rds
+  
+  sb_auth:
+    command: authenticate_sb()
+  
+  toha_sbid:
+    command: c(I("5e5d0bb9e4b01d50924f2b36"))
+    
+  1_fetch/out/toha_irradiance_sb_files.rds:
+    command: list_sb_files(
+      target_name = target_name,
+      sb_id = toha_sbid,
+      keyword = I("irradiance"))
+      
+  1_fetch/out/toha_irradiance_downloaded.rds:
+    command: download_sb_files(
+      target_name = target_name, 
+      sb_id = toha_sbid, 
+      sb_filenames_file = "1_fetch/out/toha_irradiance_sb_files.rds", 
+      tmp_folder = I("1_fetch/tmp"))
+  
+  1_fetch/out/toha_temp_pred_sb_files.rds:
+    command: list_sb_files(
+      target_name = target_name,
+      sb_id = toha_sbid,
+      keyword = I("predictions"))
+  
+  1_fetch/out/toha_temp_pred_downloaded.rds:
+    command: download_sb_files(
+      target_name = target_name, 
+      sb_id = toha_sbid, 
+      sb_filenames_file = "1_fetch/out/toha_temp_pred_sb_files.rds", 
+      tmp_folder = I("1_fetch/tmp"))

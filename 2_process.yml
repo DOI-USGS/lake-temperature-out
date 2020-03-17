@@ -1,0 +1,31 @@
+
+include:
+  - 1_fetch.yml
+
+packages:
+
+sources:
+  - 2_process/src/create_task_plan.R
+
+targets:
+  all:
+    depends:
+      - 2_process_lake_grp_tasks.yml
+      - 2_process/log/2_process_lake_grp_tasks.ind
+  
+  groups:
+    command: seq(1,1) # update when ready to do more than just 1 at a time
+  
+  # Conduct the data munging by each lake group
+  process_lake_grp_tasks:
+    command: create_group_tasks(task_ids = groups, log_folder = I("2_process/log"))
+  2_process_lake_grp_tasks.yml:
+    command: create_task_makefile(
+      makefile = target_name, 
+      task_plan = process_lake_grp_tasks, 
+      remake_file = I('2_process.yml'))
+  
+  2_process/log/2_process_lake_grp_tasks.ind:
+    command: scmake(
+      target_names = I('2_process_lake_grp_tasks.ind_promise'),
+      remake_file = '2_process_lake_grp_tasks.yml')
