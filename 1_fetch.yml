@@ -1,47 +1,76 @@
+target_default: 1_fetch
 
 packages:
   - sbtools
+  - readr
+  - jsonlite
 
 sources:
   - 1_fetch/src/fetch_sb_item_files.R
 
 targets:
-  all:
+  1_fetch:
     depends:
-      - sb_auth
+      - 1_fetch/out/config.json
       - 1_fetch/out/toha_irradiance_sb_files.rds
-      - 1_fetch/out/toha_irradiance_downloaded.rds
+      - 1_fetch/log/toha_irradiance_downloaded.rds
       - 1_fetch/out/toha_temp_pred_sb_files.rds
-      - 1_fetch/out/toha_temp_pred_downloaded.rds
-  
-  sb_auth:
-    command: authenticate_sb()
+      - 1_fetch/log/toha_temp_pred_downloaded.rds
+      - 1_fetch/out/toha_clarity_sb_files.rds
+      - 1_fetch/log/toha_clarity_downloaded.rds
   
   toha_sbid:
     command: c(I("5e5d0bb9e4b01d50924f2b36"))
-    
+  clarity_sbid:
+    command: c(I("5e5d0b96e4b01d50924f2b34"))
+  
+  1_fetch/out/lake_metadata.csv:
+    command: download_sb_single_file(
+      target_name = target_name,
+      sb_id = I("5e5c1c1ce4b01d50924f27e7"), 
+      sb_filename = I('lake_metadata.csv'))
+  
+  1_fetch/out/config.json:
+    command: download_sb_single_file(
+      target_name = target_name,
+      sb_id = I("5e5c1c36e4b01d50924f27ea"), 
+      sb_filename = I('pb0_config.json'))
+  
   1_fetch/out/toha_irradiance_sb_files.rds:
     command: list_sb_files(
       target_name = target_name,
       sb_id = toha_sbid,
       keyword = I("irradiance"))
       
-  1_fetch/out/toha_irradiance_downloaded.rds:
+  1_fetch/log/toha_irradiance_downloaded.rds:
     command: download_sb_files(
       target_name = target_name, 
       sb_id = toha_sbid, 
       sb_filenames_file = "1_fetch/out/toha_irradiance_sb_files.rds", 
-      tmp_folder = I("1_fetch/tmp"))
+      dest_folder = I("1_fetch/out"))
   
   1_fetch/out/toha_temp_pred_sb_files.rds:
     command: list_sb_files(
       target_name = target_name,
       sb_id = toha_sbid,
-      keyword = I("predictions"))
+      keyword = I("pb0_predictions"))
   
-  1_fetch/out/toha_temp_pred_downloaded.rds:
+  1_fetch/log/toha_temp_pred_downloaded.rds:
     command: download_sb_files(
       target_name = target_name, 
       sb_id = toha_sbid, 
       sb_filenames_file = "1_fetch/out/toha_temp_pred_sb_files.rds", 
-      tmp_folder = I("1_fetch/tmp"))
+      dest_folder = I("1_fetch/out"))
+      
+  1_fetch/out/toha_clarity_sb_files.rds:
+    command: list_sb_files(
+      target_name = target_name,
+      sb_id = clarity_sbid,
+      keyword = I("clarity"))
+  
+  1_fetch/log/toha_clarity_downloaded.rds:
+    command: download_sb_files(
+      target_name = target_name, 
+      sb_id = clarity_sbid, 
+      sb_filenames_file = "1_fetch/out/toha_clarity_sb_files.rds", 
+      dest_folder = I("1_fetch/out"))
