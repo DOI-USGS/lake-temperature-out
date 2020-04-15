@@ -1,31 +1,74 @@
-
-include:
-  - 1_fetch.yml
+target_default: 2_process
 
 packages:
+  - dplyr
 
 sources:
-  - 2_process/src/create_task_plan.R
+  - 2_process/src/munge_files.R
+  - 2_process/src/create_group_task_plan.R
+  - 2_process/src/create_lake_task_plan.R
 
 targets:
-  all:
+  2_process:
     depends:
-      - 2_process_lake_grp_tasks.yml
-      - 2_process/log/2_process_lake_grp_tasks.ind
+      - 2_process_grp_tasks.yml
+      - 2_process/out/2_process_grp_tasks.rds
+      - 2_process/log/2_process_lake_tasks.ind
+      - 2_process/log/2_process_zip_toha.rds
   
-  groups:
-    command: seq(1,1) # update when ready to do more than just 1 at a time
+  sb_groups:
+    command: read_csv("1_fetch/out/lake_metadata.csv")
+  sb_group_ids_all:
+    command: sb_groups[[I("group_id")]] 
+  sb_group_ids_unordered:
+    command: unique(sb_group_ids_all)
+  sb_group_ids:
+    command: sort(sb_group_ids_unordered)
+    
+  morphometry:
+    command: extract_morphometry("1_fetch/out/config.json")
   
-  # Conduct the data munging by each lake group
-  process_lake_grp_tasks:
-    command: create_group_tasks(task_ids = groups, log_folder = I("2_process/log"))
-  2_process_lake_grp_tasks.yml:
-    command: create_task_makefile(
+  ### Munge data by each lake group ###
+  # Unzip, merge, and write feather files for each lake
+  
+  process_grp_tasks:
+    command: create_group_tasks(task_ids = sb_group_ids, 
+      log_folder = I("2_process/log"))
+  
+  2_process_grp_tasks.yml:
+    command: create_group_task_makefile(
       makefile = target_name, 
-      task_plan = process_lake_grp_tasks, 
+      task_plan = process_grp_tasks, 
+      remake_file = I('2_process.yml'),
+      final_targets = I('2_process/out/2_process_grp_tasks.rds.ind'))
+  
+  2_process/out/2_process_grp_tasks.rds:
+    command: scmake(
+      target_names = I('2_process_grp_tasks.rds.ind_promise'),
+      remake_file = '2_process_grp_tasks.yml')
+  
+  ### Calculate TOHA for each lake ###
+  
+  process_lake_tasks:
+    command: create_lake_tasks(task_df_fn = '2_process/out/2_process_grp_tasks.rds', 
+      log_folder = I("2_process/log"))
+  
+  2_process_lake_tasks.yml:
+    command: create_lake_task_makefile(
+      makefile = target_name, 
+      task_plan = process_lake_tasks, 
       remake_file = I('2_process.yml'))
   
-  2_process/log/2_process_lake_grp_tasks.ind:
+  2_process/log/2_process_lake_tasks.ind:
     command: scmake(
-      target_names = I('2_process_lake_grp_tasks.ind_promise'),
-      remake_file = '2_process_lake_grp_tasks.yml')
+      target_names = I('2_process_lake_tasks.ind_promise'),
+      remake_file = '2_process_lake_tasks.yml')
+  
+  ### Zip up lake toha files by lake group ###
+  
+  2_process/log/2_process_zip_toha.rds:
+    command: rezip(
+      target_name = target_name,
+      sb_group_xwalk = sb_groups, 
+      sb_group_ids = sb_group_ids, 
+      toha_lake_ind = '2_process/log/2_process_lake_tasks.ind')
