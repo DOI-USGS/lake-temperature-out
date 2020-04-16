@@ -8,6 +8,5 @@
 */tmp/*
 !2_process/tmp/EMPTY
 */out/*
-!*/out/*.ind
 .remake
 *_tasks.yml
