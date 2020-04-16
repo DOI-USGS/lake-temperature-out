@@ -11,14 +11,14 @@ download_sb_files <- function(target_name, sb_id, keyword, dest_folder) {
     destinations = file.path(dest_folder, sb_filenames),
     overwrite_file = TRUE)
   
-  saveRDS(object = local_filenames, file = target_name)
+  scipiper::sc_indicate(target_name, data_file = local_filenames)
 }
 
 download_sb_single_file <- function(target_name, sb_id, sb_filename) {
   
   sb_check_login()
   
-  local_filename <- item_file_download(
+  item_file_download(
     sb_id, 
     names = sb_filename, 
     destinations = target_name, 

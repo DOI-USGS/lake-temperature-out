@@ -26,7 +26,7 @@ rezip <- function(target_name, sb_group_xwalk, sb_group_ids, toha_lake_ind, toha
     }
   }) %>% unlist()
   
-  saveRDS(zipped_files, target_name)
+  scipiper::sc_indicate(target_name, data_file = zipped_files)
   
 }
 

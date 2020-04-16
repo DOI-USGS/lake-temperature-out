@@ -12,9 +12,9 @@ targets:
   2_process:
     depends:
       - 2_process_grp_tasks.yml
-      - 2_process/out/2_process_grp_tasks.rds
-      - 2_process/log/2_process_lake_tasks.ind
-      - 2_process/log/2_process_zip_toha.rds
+      - 2_process/out/2_process_grp_tasks_completed.yml
+      - 2_process/out/2_process_lake_tasks.ind
+      - 2_process/out/2_process_zip_pb0_toha.yml
   
   sb_group_info:
     command: read_csv("1_fetch/out/lake_metadata.csv")
@@ -36,17 +36,17 @@ targets:
       makefile = target_name, 
       task_plan = process_grp_tasks, 
       remake_file = I('2_process.yml'),
-      final_targets = I('2_process/out/2_process_grp_tasks.rds.ind'))
+      final_targets = I('2_process/out/2_process_grp_tasks_completed.yml'))
   
-  2_process/out/2_process_grp_tasks.rds:
+  2_process/out/2_process_grp_tasks_completed.yml:
     command: scmake(
-      target_names = I('2_process_grp_tasks.rds.ind_promise'),
+      target_names = I('2_process_grp_tasks_completed.yml_promise'),
       remake_file = '2_process_grp_tasks.yml')
   
   ### Calculate TOHA for each lake ###
   
   process_lake_tasks:
-    command: create_lake_tasks(task_df_fn = '2_process/out/2_process_grp_tasks.rds', 
+    command: create_lake_tasks(task_df_fn = '2_process/out/2_process_grp_tasks_completed.yml', 
       log_folder = I("2_process/log"))
   
   2_process_lake_tasks.yml:
@@ -55,16 +55,16 @@ targets:
       task_plan = process_lake_tasks, 
       remake_file = I('2_process.yml'))
   
-  2_process/log/2_process_lake_tasks.ind:
+  2_process/out/2_process_lake_tasks.ind:
     command: scmake(
       target_names = I('2_process_lake_tasks.ind_promise'),
       remake_file = '2_process_lake_tasks.yml')
   
   ### Zip up lake toha files by lake group ###
   
-  2_process/log/2_process_zip_pb0_toha.rds:
+  2_process/out/2_process_zip_pb0_toha.yml:
     command: rezip(
       target_name = target_name,
       sb_group_xwalk = sb_group_info, 
       sb_group_ids = sb_group_ids, 
-      toha_lake_ind = '2_process/log/2_process_lake_tasks.ind')
+      toha_lake_ind = '2_process/out/2_process_lake_tasks.ind')

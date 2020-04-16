@@ -32,16 +32,16 @@ create_group_tasks <- function(task_ids, log_folder){
   combine_pb0_zipped_files <- scipiper::create_task_step(
     step_name = 'combine_pb0_zipped_files',
     target_name = function(task_name, step_name, ...){
-      sprintf("2_process/log/merged_pb0_data_%s.rds", task_name)
+      sprintf("2_process/out/merged_pb0_data_%s.yml", task_name)
     },
     command = function(task_name, ...){
       cur_task <- dplyr::filter(rename(tasks, tn=task_name), tn==task_name)
       psprintf("unzip_and_merge_files(", 
                "target_name = target_name,",
                "lake_ids = %s_lake_ids," = task_name,
-               "irradiance_zipfile = I('1_fetch/out/irradiance_%s.zip')," = cur_task$task_id,
-               "clarity_zipfile = I('1_fetch/out/clarity_%s.zip')," = cur_task$task_id,
-               "temp_zipfile = I('1_fetch/out/pb0_predictions_%s.zip')," = cur_task$task_id,
+               "irradiance_zipfile = '1_fetch/out/irradiance_%s.zip'," = cur_task$task_id,
+               "clarity_zipfile = '1_fetch/out/clarity_%s.zip'," = cur_task$task_id,
+               "temp_zipfile = '1_fetch/out/pb0_predictions_%s.zip'," = cur_task$task_id,
                "fn_out_template = I('2_process/tmp/merged_pb0_data_%s.feather'))" = "%s" # this is a template to be used when saving data
       )
     } 

@@ -13,9 +13,9 @@ targets:
     depends:
       - 1_fetch/out/lake_metadata.csv
       - 1_fetch/out/config.json
-      - 1_fetch/log/irradiance_downloaded.rds
-      - 1_fetch/log/pb0_temp_pred_downloaded.rds
-      - 1_fetch/log/clarity_downloaded.rds
+      - 1_fetch/out/irradiance_downloaded.yml
+      - 1_fetch/out/pb0_temp_pred_downloaded.yml
+      - 1_fetch/out/clarity_downloaded.yml
   
   toha_sbid:
     command: c(I("5e5d0bb9e4b01d50924f2b36"))
@@ -34,21 +34,21 @@ targets:
       sb_id = I("5e5c1c36e4b01d50924f27ea"), 
       sb_filename = I('pb0_config.json'))
   
-  1_fetch/log/irradiance_downloaded.rds:
+  1_fetch/out/irradiance_downloaded.yml:
     command: download_sb_files(
       target_name = target_name, 
       sb_id = toha_sbid, 
       keyword = I("irradiance"), 
       dest_folder = I("1_fetch/out"))
   
-  1_fetch/log/pb0_temp_pred_downloaded.rds:
+  1_fetch/out/pb0_temp_pred_downloaded.yml:
     command: download_sb_files(
       target_name = target_name, 
       sb_id = toha_sbid, 
       keyword = I("pb0_predictions"), 
       dest_folder = I("1_fetch/out"))
       
-  1_fetch/log/clarity_downloaded.rds:
+  1_fetch/out/clarity_downloaded.yml:
     command: download_sb_files(
       target_name = target_name, 
       sb_id = clarity_sbid, 
