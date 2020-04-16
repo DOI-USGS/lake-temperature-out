@@ -1,18 +1,9 @@
-list_sb_files <- function(target_name, sb_id, keyword) {
+
+download_sb_files <- function(target_name, sb_id, keyword, dest_folder) {
   
   sb_check_login()
   
-  sb_files <- item_list_files(sb_id)[["fname"]]
-  keyword_sb_files <- sb_files[grepl(keyword, sb_files)]
-
-  saveRDS(object = keyword_sb_files, file = target_name)
-}
-
-download_sb_files <- function(target_name, sb_id, sb_filenames_file, dest_folder) {
-  
-  sb_check_login()
-  
-  sb_filenames <- readRDS(sb_filenames_file)
+  sb_filenames <- list_sb_files(sb_id, keyword)
   
   local_filenames <- item_file_download(
     sb_id, 
@@ -40,4 +31,10 @@ sb_check_login <- function() {
     sb_secret <- dssecrets::get_dssecret("cidamanager-sb-srvc-acct")
     sbtools::authenticate_sb(username = sb_secret$username, password = sb_secret$password)
   }
+}
+
+list_sb_files <- function(sb_id, keyword) {
+  sb_files <- item_list_files(sb_id)[["fname"]]
+  keyword_sb_files <- sb_files[grepl(keyword, sb_files)]
+  return(keyword_sb_files)
 }
