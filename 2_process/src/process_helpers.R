@@ -15,6 +15,7 @@ rezip <- function(target_name, sb_group_xwalk, sb_group_ids, toha_lake_ind, toha
       setwd(toha_dir)
       
       zip_fn <- sprintf("toha_%s.zip", id)
+      # delete zip file if file exists using file.remove
       zip(zip_fn, files = basename(files_to_zip))
       
       unlink(toha_dir, recursive = TRUE)

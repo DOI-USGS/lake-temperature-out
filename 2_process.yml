@@ -4,7 +4,7 @@ packages:
   - dplyr
 
 sources:
-  - 2_process/src/munge_files.R
+  - 2_process/src/process_helpers.R
   - 2_process/src/create_group_task_plan.R
   - 2_process/src/create_lake_task_plan.R
 
