@@ -4,7 +4,7 @@ create_group_task_makefile <- function(makefile, task_plan, remake_file, final_t
     include=remake_file,
     packages=c("purrr", "dplyr", "readr", "feather"),
     sources=c("2_process/src/munge_group_files.R"),
-    finalize_funs = "gather_lake_info",
+    finalize_funs = "indicate_file_vectors",
     final_targets = final_targets
   )
 }
@@ -32,12 +32,11 @@ create_group_tasks <- function(task_ids, log_folder){
   combine_pb0_zipped_files <- scipiper::create_task_step(
     step_name = 'combine_pb0_zipped_files',
     target_name = function(task_name, step_name, ...){
-      sprintf("2_process/out/merged_pb0_data_%s.yml", task_name)
+      sprintf("merged_pb0_data_%s", task_name)
     },
     command = function(task_name, ...){
       cur_task <- dplyr::filter(rename(tasks, tn=task_name), tn==task_name)
       psprintf("unzip_and_merge_files(", 
-               "target_name = target_name,",
                "lake_ids = %s_lake_ids," = task_name,
                "irradiance_zipfile = '1_fetch/out/irradiance_%s.zip'," = cur_task$task_id,
                "clarity_zipfile = '1_fetch/out/clarity_%s.zip'," = cur_task$task_id,

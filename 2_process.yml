@@ -2,6 +2,7 @@ target_default: 2_process
 
 packages:
   - dplyr
+  - tidyr
 
 sources:
   - 2_process/src/process_helpers.R
