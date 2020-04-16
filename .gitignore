@@ -11,7 +11,3 @@
 !*/out/*.ind
 .remake
 *_tasks.yml
-
-# ignore these for now since this isn't hooked up to a shared cache
-*.ind
-build/*
