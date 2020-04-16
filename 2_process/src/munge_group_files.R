@@ -43,7 +43,3 @@ unzip_and_merge_files <- function(lake_ids, irradiance_zipfile, clarity_zipfile,
 get_lakes_from_group <- function(sb_groups, grp_id) {
   filter(sb_groups, group_id == grp_id) %>% pull(site_id)
 }
-
-indicate_file_vectors <- function(target_name, ...) {
-  sc_indicate(ind_file = target_name, data_file = c(...))
-}

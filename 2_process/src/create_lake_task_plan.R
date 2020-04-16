@@ -14,8 +14,7 @@ create_lake_tasks <- function(task_df_fn, log_folder){
     mutate(filename = basename(task_filepath)) %>% 
     extract(filename, c('prefix','site_id','suffix'), "(pb0|pball|pgdl)_data_(.*)(.feather)", remove = FALSE) %>% 
     select(task_filepath, site_id) %>% 
-    filter(nchar(task_filepath) != 0) %>% 
-    slice(1:3) # REMOVE THIS WHEN READY
+    filter(nchar(task_filepath) != 0) 
     
   
   #' I'm doing this because each toha task is slow running
@@ -49,7 +48,7 @@ create_lake_tasks <- function(task_df_fn, log_folder){
       psprintf("calculate_toha_per_lake(", 
                "target_name = target_name,",
                "nhdhr_data_fn = '%s'," = task_filepath,
-               "morphometry = %s_morphometry)" = task_name
+               "morphometry = `%s_morphometry`)" = task_name
       )
     } 
   )
