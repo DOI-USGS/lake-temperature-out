@@ -6,6 +6,7 @@
 
 # scipiper-specific files and folders
 */tmp/*
+!2_process/tmp/EMPTY
 */out/*
 !*/out/*.ind
 .remake
