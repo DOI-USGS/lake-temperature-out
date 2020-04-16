@@ -29,10 +29,10 @@ create_group_tasks <- function(task_ids, log_folder){
     } 
   )
   
-  combine_zipped_files <- scipiper::create_task_step(
-    step_name = 'combine_zipped_files',
+  combine_pb0_zipped_files <- scipiper::create_task_step(
+    step_name = 'combine_pb0_zipped_files',
     target_name = function(task_name, step_name, ...){
-      sprintf("2_process/log/merged_data_%s.rds", task_name)
+      sprintf("2_process/log/merged_pb0_data_%s.rds", task_name)
     },
     command = function(task_name, ...){
       cur_task <- dplyr::filter(rename(tasks, tn=task_name), tn==task_name)
@@ -42,7 +42,7 @@ create_group_tasks <- function(task_ids, log_folder){
                "irradiance_zipfile = I('1_fetch/out/irradiance_%s.zip')," = cur_task$task_id,
                "clarity_zipfile = I('1_fetch/out/clarity_%s.zip')," = cur_task$task_id,
                "temp_zipfile = I('1_fetch/out/pb0_predictions_%s.zip')," = cur_task$task_id,
-               "fn_out_template = I('2_process/tmp/merged_data_%s.feather'))" = "%s" # this is a template to be used when saving data
+               "fn_out_template = I('2_process/tmp/merged_pb0_data_%s.feather'))" = "%s" # this is a template to be used when saving data
       )
     } 
   )
@@ -53,8 +53,8 @@ create_group_tasks <- function(task_ids, log_folder){
     task_names=tasks$task_name,
     task_steps=list(
       get_lake_ids,
-      combine_zipped_files),
+      combine_pb0_zipped_files),
     add_complete=FALSE,
-    final_steps=c('combine_zipped_files'),
+    final_steps=c('combine_pb0_zipped_files'),
     ind_dir='2_process/log')
 }

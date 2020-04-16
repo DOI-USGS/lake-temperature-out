@@ -62,7 +62,7 @@ targets:
   
   ### Zip up lake toha files by lake group ###
   
-  2_process/log/2_process_zip_toha.rds:
+  2_process/log/2_process_zip_pb0_toha.rds:
     command: rezip(
       target_name = target_name,
       sb_group_xwalk = sb_group_info, 

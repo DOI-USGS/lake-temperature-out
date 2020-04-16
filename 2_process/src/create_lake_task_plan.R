@@ -17,11 +17,11 @@ create_lake_tasks <- function(task_df_fn, log_folder){
     filter(nchar(task_filename) != 0) 
     
   
-  calculate_toha <- scipiper::create_task_step(
-    step_name = 'calculate_toha',
+  calculate_pb0_toha <- scipiper::create_task_step(
+    step_name = 'calculate_pb0_toha',
     target_name = function(task_name, step_name, ...){
       cur_task <- dplyr::filter(rename(tasks, tn=task_name), tn==task_name)
-      sprintf("2_process/out/toha_%s.csv", cur_task$task_id)
+      sprintf("2_process/out/pb0_toha_%s.csv", cur_task$task_id)
     },
     command = function(task_name, ...){
       cur_task <- dplyr::filter(rename(tasks, tn=task_name), tn==task_name)
@@ -39,8 +39,8 @@ create_lake_tasks <- function(task_df_fn, log_folder){
   gif_task_plan <- scipiper::create_task_plan(
     task_names=tasks$task_name,
     task_steps=list(
-      calculate_toha),
+      calculate_pb0_toha),
     add_complete=FALSE,
-    final_steps=c('calculate_toha'),
+    final_steps=c('calculate_pb0_toha'),
     ind_dir='2_process/log')
 }
