@@ -23,7 +23,7 @@ create_group_tasks <- function(task_ids, log_folder){
     command = function(task_name, ...){
       cur_task <- dplyr::filter(rename(tasks, tn=task_name), tn==task_name)
       psprintf("get_lakes_from_group(", 
-               "sb_groups = sb_groups,",
+               "sb_groups = sb_group_info,",
                "grp_id = I('%s'))" = cur_task$task_id
       )
     } 

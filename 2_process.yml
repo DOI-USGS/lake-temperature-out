@@ -16,14 +16,10 @@ targets:
       - 2_process/log/2_process_lake_tasks.ind
       - 2_process/log/2_process_zip_toha.rds
   
-  sb_groups:
+  sb_group_info:
     command: read_csv("1_fetch/out/lake_metadata.csv")
-  sb_group_ids_all:
-    command: sb_groups[[I("group_id")]] 
-  sb_group_ids_unordered:
-    command: unique(sb_group_ids_all)
   sb_group_ids:
-    command: sort(sb_group_ids_unordered)
+    command: get_group_ids(sb_group_info)
     
   morphometry:
     command: extract_morphometry("1_fetch/out/config.json")
@@ -69,6 +65,6 @@ targets:
   2_process/log/2_process_zip_toha.rds:
     command: rezip(
       target_name = target_name,
-      sb_group_xwalk = sb_groups, 
+      sb_group_xwalk = sb_group_info, 
       sb_group_ids = sb_group_ids, 
       toha_lake_ind = '2_process/log/2_process_lake_tasks.ind')
