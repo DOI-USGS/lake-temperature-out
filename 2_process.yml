@@ -12,6 +12,7 @@ sources:
 targets:
   2_process:
     depends:
+      - morphometry
       - 2_process_grp_tasks.yml
       - 2_process/out/2_process_grp_tasks_completed.yml
       - 2_process/out/2_process_lake_tasks.ind
@@ -64,6 +65,8 @@ targets:
     command: scmake(
       target_names = I('2_process_lake_tasks.ind_promise'),
       remake_file = '2_process_lake_tasks.yml')
+    depends:
+      - morphometry
   
   ### Zip up lake toha files by lake group ###
   
