@@ -3,33 +3,52 @@ create_lake_task_makefile <- function(makefile, task_plan, remake_file, final_ta
     makefile=makefile, task_plan=task_plan,
     include=remake_file,
     packages=c("purrr", "dplyr", "mda.lakes", "feather", "rLakeAnalyzer"),
+    final_targets = final_targets,
     sources=c("2_process/src/calculate_toha.R")
   )
 }
 
 create_lake_tasks <- function(task_df_fn, log_folder){
-  
-  # prepare a data.frame with one row per task
-  tasks <- readRDS(task_df_fn)[1:3,] %>% 
-    rename(task_id = nhdhr, task_filename = filename) %>% 
-    mutate(task_name = task_id) %>% 
-    # Remove the lakes that didn't merge data
-    filter(nchar(task_filename) != 0) 
+
+  tasks <- tibble(task_filepath = names(yaml::yaml.load_file(task_df_fn))) %>% 
+    mutate(filename = basename(task_filepath)) %>% 
+    extract(filename, c('prefix','site_id','suffix'), "(pb0|pball|pgdl)_data_(.*)(.feather)", remove = FALSE) %>% 
+    select(task_filepath, site_id) %>% 
+    filter(nchar(task_filepath) != 0) 
     
+  
+  #' I'm doing this because each toha task is slow running
+  #' and if `morphometry` changes, we don't want to have to re-run all of them,
+  #' just the ones where _their_ morphometry changed. So we are subsetting first. 
+  split_morphometry <- scipiper::create_task_step(
+    step_name = 'split_morphometry',
+    target_name = function(task_name, step_name, ...){
+      
+      sprintf("%s_morphometry", task_name)
+    },
+    command = function(task_name, ...){
+      task_filepath <- dplyr::filter(tasks, site_id == task_name) %>% 
+        pull(task_filepath)
+      psprintf("subset_list(",
+               "list = morphometry,",
+               "field = I('%s'))" = task_name
+      )
+    } 
+  )
   
   calculate_pb0_toha <- scipiper::create_task_step(
     step_name = 'calculate_pb0_toha',
     target_name = function(task_name, step_name, ...){
-      cur_task <- dplyr::filter(rename(tasks, tn=task_name), tn==task_name)
-      sprintf("2_process/out/pb0_toha_%s.csv", cur_task$task_id)
+      
+      sprintf("2_process/out/pb0_toha_%s.csv", task_name)
     },
     command = function(task_name, ...){
-      cur_task <- dplyr::filter(rename(tasks, tn=task_name), tn==task_name)
+      task_filepath <- dplyr::filter(tasks, site_id == task_name) %>% 
+        pull(task_filepath)
       psprintf("calculate_toha_per_lake(", 
                "target_name = target_name,",
-               "nhdhr = I('%s')," = cur_task$task_id,
-               "nhdhr_data_fn = '%s'," = cur_task$task_filename,
-               "morphometry = morphometry)"
+               "nhdhr_data_fn = '%s'," = task_filepath,
+               "morphometry = `%s_morphometry`)" = task_name
       )
     } 
   )
@@ -37,8 +56,8 @@ create_lake_tasks <- function(task_df_fn, log_folder){
   # ---- combine into a task plan ---- #
   
   gif_task_plan <- scipiper::create_task_plan(
-    task_names=tasks$task_name,
-    task_steps=list(
+    task_names=tasks$site_id,
+    task_steps=list(split_morphometry,
       calculate_pb0_toha),
     add_complete=FALSE,
     final_steps=c('calculate_pb0_toha'),

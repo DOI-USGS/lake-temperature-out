@@ -1,4 +1,4 @@
-unzip_and_merge_files <- function(target_name, lake_ids, irradiance_zipfile, clarity_zipfile, temp_zipfile, fn_out_template) {
+unzip_and_merge_files <- function(lake_ids, irradiance_zipfile, clarity_zipfile, temp_zipfile, fn_out_template) {
   
   unzipped_irradiance_files <- unzip(zipfile = irradiance_zipfile, overwrite = TRUE, exdir = tempdir())
   unzipped_clarity_files <- unzip(zipfile = clarity_zipfile, overwrite = TRUE, exdir = tempdir())
@@ -33,20 +33,13 @@ unzip_and_merge_files <- function(target_name, lake_ids, irradiance_zipfile, cla
       
     }
     
-    return(data.frame(filename = nhdhr_fn, stringsAsFactors = FALSE))
+    return(nhdhr_fn)
   }) %>% 
-    purrr::reduce(bind_rows)
+    purrr::reduce(c)
   
-  scipiper::sc_indicate(target_name, data_file = merged_files$filename)
+  merged_files
 }
 
 get_lakes_from_group <- function(sb_groups, grp_id) {
   filter(sb_groups, group_id == grp_id) %>% pull(site_id)
-}
-
-gather_lake_info <- function(target_name, ...) {
-  browser()
-  info_list <- purrr::map(c(...), yaml::yaml.load) %>% purrr::reduce(bind_rows)
-  saveRDS(info_list, as_data_file(ind_file))
-  scipiper::sc_indicate(target_name, data_file = merged_files$filename)
 }
