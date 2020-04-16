@@ -3,6 +3,7 @@ create_lake_task_makefile <- function(makefile, task_plan, remake_file, final_ta
     makefile=makefile, task_plan=task_plan,
     include=remake_file,
     packages=c("purrr", "dplyr", "mda.lakes", "feather", "rLakeAnalyzer"),
+    final_targets = final_targets,
     sources=c("2_process/src/calculate_toha.R")
   )
 }

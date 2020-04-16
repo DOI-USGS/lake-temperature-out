@@ -30,7 +30,10 @@ targets:
   
   process_grp_tasks:
     command: create_group_tasks(task_ids = sb_group_ids, 
-      log_folder = I("2_process/log"))
+      log_folder = I("2_process/log"),
+      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
+      clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
+      predictions_zips = '1_fetch/out/pb0_temp_pred_downloaded.yml')
   
   2_process_grp_tasks.yml:
     command: create_group_task_makefile(
@@ -54,7 +57,8 @@ targets:
     command: create_lake_task_makefile(
       makefile = target_name, 
       task_plan = process_lake_tasks, 
-      remake_file = I('2_process.yml'))
+      remake_file = I('2_process.yml'),
+      final_targets = I('2_process/out/2_process_lake_tasks.ind'))
   
   2_process/out/2_process_lake_tasks.ind:
     command: scmake(
