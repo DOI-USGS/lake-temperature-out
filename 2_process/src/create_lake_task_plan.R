@@ -37,7 +37,7 @@ create_lake_tasks <- function(task_df_fn, log_folder){
     step_name = 'calculate_pb0_toha',
     target_name = function(task_name, step_name, ...){
       
-      sprintf("2_process/out/pb0_toha_%s.csv", task_name)
+      sprintf("2_process/tmp/pb0_toha_%s.csv", task_name)
     },
     command = function(task_name, ...){
       task_filepath <- dplyr::filter(tasks, site_id == task_name) %>% 

@@ -75,4 +75,5 @@ targets:
       target_name = target_name,
       sb_group_xwalk = sb_group_info, 
       sb_group_ids = sb_group_ids, 
-      toha_lake_ind = '2_process/out/2_process_lake_tasks.ind')
+      files_to_zip_ind = '2_process/out/2_process_lake_tasks.ind',
+      dest_dir = '2_process/tmp')

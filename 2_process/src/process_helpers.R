@@ -1,6 +1,6 @@
-rezip <- function(target_name, sb_group_xwalk, sb_group_ids, toha_lake_ind, toha_dir = "2_process/out") {
+rezip <- function(target_name, sb_group_xwalk, sb_group_ids, files_to_zip_ind, dest_dir) {
   
-  toha_lake_files <- names(yaml::yaml.load_file(toha_lake_ind))
+  zip_files_all <- names(yaml::yaml.load_file(files_to_zip_ind))
   
   # Need to change working directory to directory with files that you are zipping
   cd <- getwd()
@@ -8,13 +8,13 @@ rezip <- function(target_name, sb_group_xwalk, sb_group_ids, toha_lake_ind, toha
   
   zipped_files <- purrr::map(sb_group_ids, function(id) {
     lakes_in_group <- filter(sb_group_xwalk, group_id == id) %>% pull(site_id)
-    files_to_zip <- toha_lake_files[grep(paste(lakes_in_group, collapse="|"), toha_lake_files, perl=TRUE)]
+    files_to_zip <- zip_files_all[grep(paste(lakes_in_group, collapse="|"), zip_files_all, perl=TRUE)]
     
     if(length(files_to_zip) == 0) { 
       message(sprintf("Group %s: no files to zip", id))
       return() 
     } else {
-      setwd(toha_dir)
+      setwd(dest_dir)
       
       # Windows users: note that this may silently fail for you
       #   Please see: https://stackoverflow.com/a/52014909
@@ -22,9 +22,9 @@ rezip <- function(target_name, sb_group_xwalk, sb_group_ids, toha_lake_ind, toha
       if(file.exists(zip_fn)) file.remove(zip_fn)
       zip(zip_fn, files = basename(files_to_zip))
       
-      unlink(toha_dir, recursive = TRUE)
+      unlink(dest_dir, recursive = TRUE)
       setwd(cd)
-      return(file.path(toha_dir, zip_fn))
+      return(file.path(dest_dir, zip_fn))
     }
   }) %>% unlist()
   

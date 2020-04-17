@@ -39,18 +39,18 @@ targets:
       target_name = target_name, 
       sb_id = toha_sbid, 
       keyword = I("irradiance"), 
-      dest_folder = I("1_fetch/out"))
+      dest_folder = I("1_fetch/tmp"))
   
   1_fetch/out/pb0_temp_pred_downloaded.yml:
     command: download_sb_files(
       target_name = target_name, 
       sb_id = toha_sbid, 
       keyword = I("pb0_predictions"), 
-      dest_folder = I("1_fetch/out"))
+      dest_folder = I("1_fetch/tmp"))
       
   1_fetch/out/clarity_downloaded.yml:
     command: download_sb_files(
       target_name = target_name, 
       sb_id = clarity_sbid, 
       keyword = I("clarity"), 
-      dest_folder = I("1_fetch/out"))
+      dest_folder = I("1_fetch/tmp"))
