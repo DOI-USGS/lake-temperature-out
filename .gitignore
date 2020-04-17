@@ -6,7 +6,9 @@
 
 # scipiper-specific files and folders
 */tmp/*
+!1_fetch/tmp/EMPTY
 !2_process/tmp/EMPTY
+!3_summarize/tmp/EMPTY
 */out/*
 .remake
 *_tasks.yml
