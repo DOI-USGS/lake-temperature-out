@@ -29,11 +29,6 @@ calculate_toha_per_lake <- function(target_name, nhdhr_data_fn, morphometry) {
     readr::write_csv(path = target_name)
 }
 
-#' simple list subset
-subset_list <- function(list, field){
-  list[[field]]
-}
-
 #' @title Calculate OHA, THA, and TOHA within table.
 #' 
 #' @description This function assumes that you are doing one day at a time and

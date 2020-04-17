@@ -29,10 +29,7 @@ create_lake_tasks <- function(task_df_fn, log_folder){
     command = function(task_name, ...){
       task_filepath <- dplyr::filter(tasks, site_id == task_name) %>% 
         pull(task_filepath)
-      psprintf("subset_list(",
-               "list = morphometry,",
-               "field = I('%s'))" = task_name
-      )
+      sprintf("morphometry[[I('%s')]]", task_name)
     } 
   )
   
