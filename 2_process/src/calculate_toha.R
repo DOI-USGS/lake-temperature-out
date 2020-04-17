@@ -125,7 +125,7 @@ vol_light_map <- function(kd, light_incident, thresholds, depths){
   #Now we need to turn it to a volumetric light map, where TRUE means 
   # that layer (not just slice) is within the thresholds
   light_map_shifted <- light_map[,-1] # Effectively "moves" values of light_map over 1 column
-  light_map_to_compare <- light_map[,-ncol(light_map)] # Removes last column
+  light_map_to_compare <- light_map[,-ncol(light_map), drop=FALSE] # Removes last column
   vol_light_map <- light_map_shifted & light_map_to_compare # Compares each value to the value of the next column over
   
   return(vol_light_map)
