@@ -16,7 +16,6 @@ targets:
       - 2_process_grp_tasks.yml
       - 2_process/out/2_process_grp_tasks_completed.yml
       - 2_process/out/2_process_lake_tasks.ind
-      - 2_process/out/2_process_zip_pb0_toha.yml
   
   sb_group_info:
     command: read_csv("1_fetch/out/lake_metadata.csv")
@@ -67,13 +66,3 @@ targets:
       remake_file = '2_process_lake_tasks.yml')
     depends:
       - morphometry
-  
-  ### Zip up lake toha files by lake group ###
-  
-  2_process/out/2_process_zip_pb0_toha.yml:
-    command: rezip(
-      target_name = target_name,
-      sb_group_xwalk = sb_group_info, 
-      sb_group_ids = sb_group_ids, 
-      files_to_zip_ind = '2_process/out/2_process_lake_tasks.ind',
-      dest_dir = '2_process/tmp')
