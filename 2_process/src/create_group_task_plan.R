@@ -28,8 +28,7 @@ create_group_tasks <- function(task_ids, log_folder, irradiance_zips, clarity_zi
   tasks <- inner_join(irr_files, clarity_files, by = 'group_n') %>% 
     inner_join(pred_files, by = 'group_n') %>% 
     inner_join(group_info, by = 'group_n') %>% 
-    mutate(task_id = sprintf("group_%s", group_n)) %>% 
-    filter(group_n %in% c('01','02')) # REMOVE THIS!!
+    mutate(task_id = sprintf("group_%s", group_n))
 
   # # prepare a data.frame with one row per task
   # tasks <- data_frame(task_id=task_ids[1:2]) %>%
