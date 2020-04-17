@@ -1,0 +1,22 @@
+target_default: 3_summarize
+
+packages:
+  - dplyr
+
+sources:
+  - 3_summarize/src/combine_files_to_zip.R
+
+targets:
+  3_summarize:
+    depends:
+      - 3_summarize/out/3_summarize_zip_pb0_toha.yml
+
+  ### Zip up lake toha files by lake group ###
+  
+  3_summarize/out/3_summarize_zip_pb0_toha.yml:
+    command: rezip(
+      target_name = target_name,
+      sb_group_xwalk = sb_group_info, 
+      sb_group_ids = sb_group_ids, 
+      files_to_zip_ind = '2_process/out/2_process_lake_tasks.ind',
+      dest_dir = '3_summarize/tmp')

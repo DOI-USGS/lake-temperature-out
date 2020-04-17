@@ -1,0 +1,68 @@
+target_default: 2_process
+
+packages:
+  - dplyr
+  - tidyr
+
+sources:
+  - 2_process/src/process_helpers.R
+  - 2_process/src/create_group_task_plan.R
+  - 2_process/src/create_lake_task_plan.R
+
+targets:
+  2_process:
+    depends:
+      - morphometry
+      - 2_process_grp_tasks.yml
+      - 2_process/out/2_process_grp_tasks_completed.yml
+      - 2_process/out/2_process_lake_tasks.ind
+  
+  sb_group_info:
+    command: read_csv("1_fetch/out/lake_metadata.csv")
+  sb_group_ids:
+    command: get_group_ids(sb_group_info)
+    
+  morphometry:
+    command: extract_morphometry("1_fetch/out/config.json")
+  
+  ### Munge data by each lake group ###
+  # Unzip, merge, and write feather files for each lake
+  
+  process_grp_tasks:
+    command: create_group_tasks(task_ids = sb_group_ids, 
+      log_folder = I("2_process/log"),
+      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
+      clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
+      predictions_zips = '1_fetch/out/pb0_temp_pred_downloaded.yml')
+  
+  2_process_grp_tasks.yml:
+    command: create_group_task_makefile(
+      makefile = target_name, 
+      task_plan = process_grp_tasks, 
+      remake_file = I('2_process.yml'),
+      final_targets = I('2_process/out/2_process_grp_tasks_completed.yml'))
+  
+  2_process/out/2_process_grp_tasks_completed.yml:
+    command: scmake(
+      target_names = I('2_process_grp_tasks_completed.yml_promise'),
+      remake_file = '2_process_grp_tasks.yml')
+  
+  ### Calculate TOHA for each lake ###
+  
+  process_lake_tasks:
+    command: create_lake_tasks(task_df_fn = '2_process/out/2_process_grp_tasks_completed.yml', 
+      log_folder = I("2_process/log"))
+  
+  2_process_lake_tasks.yml:
+    command: create_lake_task_makefile(
+      makefile = target_name, 
+      task_plan = process_lake_tasks, 
+      remake_file = I('2_process.yml'),
+      final_targets = I('2_process/out/2_process_lake_tasks.ind'))
+  
+  2_process/out/2_process_lake_tasks.ind:
+    command: scmake(
+      target_names = I('2_process_lake_tasks.ind_promise'),
+      remake_file = '2_process_lake_tasks.yml')
+    depends:
+      - morphometry
