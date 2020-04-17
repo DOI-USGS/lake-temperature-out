@@ -44,7 +44,7 @@ create_lake_tasks <- function(task_df_fn, log_folder){
         pull(task_filepath)
       psprintf("calculate_toha_per_lake(", 
                "target_name = target_name,",
-               "nhdhr_data_fn = '%s'," = task_filepath,
+               "site_data_fn = '%s'," = task_filepath,
                "morphometry = `%s_morphometry`)" = task_name
       )
     } 
