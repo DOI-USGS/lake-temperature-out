@@ -17,6 +17,9 @@ targets:
       - 1_fetch/out/pb0_temp_pred_downloaded.yml
       - 1_fetch/out/clarity_downloaded.yml
   
+  sb_dl_date:
+   command: c(I("2020-04-16"))
+  
   toha_sbid:
     command: c(I("5e5d0bb9e4b01d50924f2b36"))
   clarity_sbid:
@@ -26,31 +29,36 @@ targets:
     command: download_sb_single_file(
       target_name = target_name,
       sb_id = I("5e5c1c1ce4b01d50924f27e7"), 
-      sb_filename = I('lake_metadata.csv'))
+      sb_filename = I('lake_metadata.csv'),
+      dummy = sb_dl_date)
   
   1_fetch/out/config.json:
     command: download_sb_single_file(
       target_name = target_name,
       sb_id = I("5e5c1c36e4b01d50924f27ea"), 
-      sb_filename = I('pb0_config.json'))
+      sb_filename = I('pb0_config.json'),
+      dummy = sb_dl_date)
   
   1_fetch/out/irradiance_downloaded.yml:
     command: download_sb_files(
       target_name = target_name, 
       sb_id = toha_sbid, 
       keyword = I("irradiance"), 
-      dest_folder = I("1_fetch/tmp"))
+      dest_folder = I("1_fetch/tmp"),
+      dummy = sb_dl_date)
   
   1_fetch/out/pb0_temp_pred_downloaded.yml:
     command: download_sb_files(
       target_name = target_name, 
       sb_id = toha_sbid, 
       keyword = I("pb0_predictions"), 
-      dest_folder = I("1_fetch/tmp"))
+      dest_folder = I("1_fetch/tmp"),
+      dummy = sb_dl_date)
       
   1_fetch/out/clarity_downloaded.yml:
     command: download_sb_files(
       target_name = target_name, 
       sb_id = clarity_sbid, 
       keyword = I("clarity"), 
-      dest_folder = I("1_fetch/tmp"))
+      dest_folder = I("1_fetch/tmp"),
+      dummy = sb_dl_date)

@@ -1,5 +1,7 @@
 
-download_sb_files <- function(target_name, sb_id, keyword, dest_folder) {
+#' use `dummy` to trigger rebuilds. Using the date, as a light reminder of when it was changed
+ 
+download_sb_files <- function(target_name, sb_id, keyword, dest_folder, dummy) {
   
   sb_check_login()
   
@@ -14,7 +16,7 @@ download_sb_files <- function(target_name, sb_id, keyword, dest_folder) {
   scipiper::sc_indicate(target_name, data_file = local_filenames)
 }
 
-download_sb_single_file <- function(target_name, sb_id, sb_filename) {
+download_sb_single_file <- function(target_name, sb_id, sb_filename, dummy) {
   
   sb_check_login()
   
