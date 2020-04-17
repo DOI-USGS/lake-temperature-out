@@ -1,22 +1,22 @@
 # Functions to calculate daily TOHA for each lake
 # Edited `mda.lakes` functions.
 
-calculate_toha_per_lake <- function(target_name, nhdhr_data_fn, morphometry) {
+calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
   
-  nhdhr_data <- feather::read_feather(nhdhr_data_fn)
-  wtr_cols <- grep("temp_", names(nhdhr_data))
+  site_data <- feather::read_feather(site_data_fn)
+  wtr_cols <- grep("temp_", names(site_data))
   
   hypsos <- data.frame(H = morphometry$H, A = morphometry$A) %>% 
     mutate(depths = max(H) - H, areas = A) %>% 
     arrange(depths) %>% 
     select(depths, areas)
   
-  toha_out <- purrr::map(1:nrow(nhdhr_data), function(r) {
+  toha_out <- purrr::map(1:nrow(site_data), function(r) {
       opti_thermal_habitat_subdaily(
-        current_date = nhdhr_data$DateTime[r],
-        wtr = nhdhr_data[r, wtr_cols], 
-        io = nhdhr_data$io[r], 
-        kd = nhdhr_data$kd[r], 
+        current_date = site_data$DateTime[r],
+        wtr = site_data[r, wtr_cols], 
+        io = site_data$io[r], 
+        kd = site_data$kd[r], 
         lat = morphometry$latitude, 
         lon = morphometry$longitude, 
         hypsos = hypsos, 
@@ -24,14 +24,9 @@ calculate_toha_per_lake <- function(target_name, nhdhr_data_fn, morphometry) {
         wtr_thresh = c(11,25))
     }) %>% 
     purrr::reduce(bind_rows) %>% 
-    mutate(date = nhdhr_data$DateTime) %>% # Add the date column
+    mutate(date = site_data$DateTime) %>% # Add the date column
     select(date, everything()) %>% # Move it so it's first
     readr::write_csv(path = target_name)
-}
-
-#' simple list subset
-subset_list <- function(list, field){
-  list[[field]]
 }
 
 #' @title Calculate OHA, THA, and TOHA within table.

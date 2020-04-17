@@ -29,10 +29,7 @@ create_lake_tasks <- function(task_df_fn, log_folder){
     command = function(task_name, ...){
       task_filepath <- dplyr::filter(tasks, site_id == task_name) %>% 
         pull(task_filepath)
-      psprintf("subset_list(",
-               "list = morphometry,",
-               "field = I('%s'))" = task_name
-      )
+      sprintf("morphometry[[I('%s')]]", task_name)
     } 
   )
   
@@ -40,14 +37,14 @@ create_lake_tasks <- function(task_df_fn, log_folder){
     step_name = 'calculate_pb0_toha',
     target_name = function(task_name, step_name, ...){
       
-      sprintf("2_process/out/pb0_toha_%s.csv", task_name)
+      sprintf("2_process/tmp/pb0_toha_%s.csv", task_name)
     },
     command = function(task_name, ...){
       task_filepath <- dplyr::filter(tasks, site_id == task_name) %>% 
         pull(task_filepath)
       psprintf("calculate_toha_per_lake(", 
                "target_name = target_name,",
-               "nhdhr_data_fn = '%s'," = task_filepath,
+               "site_data_fn = '%s'," = task_filepath,
                "morphometry = `%s_morphometry`)" = task_name
       )
     } 

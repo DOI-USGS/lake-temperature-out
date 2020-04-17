@@ -12,10 +12,10 @@ sources:
 targets:
   2_process:
     depends:
+      - morphometry
       - 2_process_grp_tasks.yml
       - 2_process/out/2_process_grp_tasks_completed.yml
       - 2_process/out/2_process_lake_tasks.ind
-      - 2_process/out/2_process_zip_pb0_toha.yml
   
   sb_group_info:
     command: read_csv("1_fetch/out/lake_metadata.csv")
@@ -64,12 +64,5 @@ targets:
     command: scmake(
       target_names = I('2_process_lake_tasks.ind_promise'),
       remake_file = '2_process_lake_tasks.yml')
-  
-  ### Zip up lake toha files by lake group ###
-  
-  2_process/out/2_process_zip_pb0_toha.yml:
-    command: rezip(
-      target_name = target_name,
-      sb_group_xwalk = sb_group_info, 
-      sb_group_ids = sb_group_ids, 
-      toha_lake_ind = '2_process/out/2_process_lake_tasks.ind')
+    depends:
+      - morphometry
