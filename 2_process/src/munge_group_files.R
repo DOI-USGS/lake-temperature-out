@@ -33,13 +33,21 @@ unzip_and_merge_files <- function(lake_ids, irradiance_zipfile, clarity_zipfile,
       
     }
     
-    return(nhdhr_fn)
+    return(tibble(filename = nhdhr_fn, hash = tools::md5sum(nhdhr_fn)))
   }) %>% 
-    purrr::reduce(c)
+    purrr::reduce(bind_rows)
   
   merged_files
 }
 
 get_lakes_from_group <- function(sb_groups, grp_id) {
   filter(sb_groups, group_id == grp_id) %>% pull(site_id)
+}
+
+indicate_file_dataframes <- function(target_name, ...) {
+  # save as yml with format with file:hash
+  bind_rows(...) %>% # combine all data frames from each group
+    tidyr::unite(formatted, sep = ": ") %>% 
+    pull(formatted) %>% 
+    writeLines(con = target_name)
 }

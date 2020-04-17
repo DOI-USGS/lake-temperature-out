@@ -4,6 +4,7 @@ create_group_task_makefile <- function(makefile, task_plan, remake_file, final_t
     include=remake_file,
     packages=c("purrr", "dplyr", "readr", "feather"),
     sources=c("2_process/src/munge_group_files.R"),
+    finalize_funs = "indicate_file_dataframes",
     final_targets = final_targets
   )
 }
