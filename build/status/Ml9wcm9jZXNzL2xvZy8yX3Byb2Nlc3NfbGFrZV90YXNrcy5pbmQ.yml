@@ -1,0 +1,11 @@
+version: 0.3.0
+name: 2_process/log/2_process_lake_tasks.ind
+type: file
+hash: fbf8863a3bcc7f2403a9ffdea1528ce7
+time: 2020-04-15 19:26:04 UTC
+depends:
+  2_process_lake_tasks.yml: ce753d3540f9aac1ffbd3a7f7b97e2e4
+fixed: 5ee95603e7971af90a48c05e0c41b86b
+code:
+  functions: {}
+
