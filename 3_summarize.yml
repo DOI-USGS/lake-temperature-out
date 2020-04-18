@@ -19,4 +19,4 @@ targets:
       sb_group_xwalk = sb_group_info, 
       sb_group_ids = sb_group_ids, 
       files_to_zip_ind = '2_process/out/2_process_lake_tasks.ind',
-      dest_dir = '3_summarize/tmp')
+      dest_dir = I('3_summarize/tmp'))
