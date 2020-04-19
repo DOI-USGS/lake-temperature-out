@@ -47,6 +47,14 @@ targets:
       dest_folder = I("1_fetch/tmp"),
       dummy = sb_dl_date)
   
+  1_fetch/out/pgdl_temp_pred_downloaded.yml:
+    command: download_sb_files(
+      target_name = target_name, 
+      sb_id = toha_sbid, 
+      keyword = I("pgdl_predictions"), 
+      dest_folder = I("1_fetch/tmp"),
+      dummy = sb_dl_date)
+      
   1_fetch/out/pb0_temp_pred_downloaded.yml:
     command: download_sb_files(
       target_name = target_name, 

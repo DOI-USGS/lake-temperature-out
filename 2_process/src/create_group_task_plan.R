@@ -23,12 +23,15 @@ create_group_tasks <- function(task_ids, log_folder, irradiance_zips, clarity_zi
     select(-prefix, clarity_filepath = filepath)
   pred_files <- tibble(filepath = yaml::yaml.load_file(predictions_zips) %>% names) %>% 
     extract(filepath, into = parse_into, regex = regx, remove = FALSE) %>% 
-    select(-prefix, pred_filepath = filepath)
+    select(pred_filepath = filepath, everything())
+  
+  model_prefix <- pull(pred_files, prefix) %>% unique() %>% stringr::str_remove('_predictions')
+  stopifnot(length(model_prefix) == 1)
   
   tasks <- inner_join(irr_files, clarity_files, by = 'group_n') %>% 
     inner_join(pred_files, by = 'group_n') %>% 
     inner_join(group_info, by = 'group_n') %>% 
-    mutate(task_id = sprintf("group_%s", group_n))
+    mutate(task_id = sprintf("group_%s", group_n)) %>% select(-prefix)
 
   # # prepare a data.frame with one row per task
   # tasks <- data_frame(task_id=task_ids[1:2]) %>%
@@ -48,9 +51,9 @@ create_group_tasks <- function(task_ids, log_folder, irradiance_zips, clarity_zi
     } 
   )
   combine_pb0_zipped_files <- scipiper::create_task_step(
-    step_name = 'combine_pb0_zipped_files',
+    step_name = 'combine_model_zipped_files',
     target_name = function(task_name, step_name, ...){
-      sprintf("merged_pb0_data_%s", task_name)
+      sprintf("merged_model_data_%s", task_name)
     },
     command = function(task_name, ...){
       cur_task <- dplyr::filter(tasks, task_id == task_name)
@@ -59,7 +62,7 @@ create_group_tasks <- function(task_ids, log_folder, irradiance_zips, clarity_zi
                "irradiance_zipfile = '%s'," = cur_task$irr_filepath,
                "clarity_zipfile = '%s'," = cur_task$clarity_filepath,
                "temp_zipfile = '%s'," = cur_task$pred_filepath,
-               "fn_out_template = I('2_process/tmp/merged_pb0_data_%s.feather'))" = "%s" # this is a template to be used when saving data
+               "fn_out_template = I('2_process/tmp/merged_%s_data_%s.feather'))" = c(model_prefix, "%s") # this is a template to be used when saving data
       )
     } 
   )
@@ -72,6 +75,6 @@ create_group_tasks <- function(task_ids, log_folder, irradiance_zips, clarity_zi
       get_lake_ids,
       combine_pb0_zipped_files),
     add_complete=FALSE,
-    final_steps=c('combine_pb0_zipped_files'),
+    final_steps=c('combine_model_zipped_files'),
     ind_dir='2_process/log')
 }

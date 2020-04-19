@@ -13,9 +13,12 @@ create_lake_tasks <- function(task_df_fn, log_folder){
   tasks <- tibble(task_filepath = names(yaml::yaml.load_file(task_df_fn))) %>% 
     mutate(filename = basename(task_filepath)) %>% 
     extract(filename, c('prefix','site_id','suffix'), "(pb0|pball|pgdl)_data_(.*)(.feather)", remove = FALSE) %>% 
-    select(task_filepath, site_id) %>% 
+    select(task_filepath, site_id, prefix) %>% 
     filter(nchar(task_filepath) != 0) 
     
+  model_type = pull(tasks, prefix) %>% unique()
+  stopifnot(length(model_type) == 1)
+  toha_step_name <- sprintf('calculate_%s_toha', model_type)
   
   #' I'm doing this because each toha task is slow running
   #' and if `morphometry` changes, we don't want to have to re-run all of them,
@@ -34,10 +37,10 @@ create_lake_tasks <- function(task_df_fn, log_folder){
   )
   
   calculate_pb0_toha <- scipiper::create_task_step(
-    step_name = 'calculate_pb0_toha',
+    step_name = toha_step_name,
     target_name = function(task_name, step_name, ...){
       
-      sprintf("2_process/tmp/pb0_toha_%s.csv", task_name)
+      sprintf("2_process/tmp/%s_toha_%s.csv", model_type, task_name)
     },
     command = function(task_name, ...){
       task_filepath <- dplyr::filter(tasks, site_id == task_name) %>% 
@@ -57,6 +60,6 @@ create_lake_tasks <- function(task_df_fn, log_folder){
     task_steps=list(split_morphometry,
       calculate_pb0_toha),
     add_complete=FALSE,
-    final_steps=c('calculate_pb0_toha'),
+    final_steps=c(toha_step_name),
     ind_dir='2_process/log')
 }

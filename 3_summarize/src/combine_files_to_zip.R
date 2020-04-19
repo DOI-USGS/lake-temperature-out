@@ -1,4 +1,4 @@
-rezip <- function(target_name, sb_group_xwalk, sb_group_ids, files_to_zip_ind, dest_dir) {
+rezip <- function(target_name, sb_group_xwalk, sb_group_ids, files_to_zip_ind, dest_dir, zip_out_prefix) {
   
   zip_files_all <- names(yaml::yaml.load_file(files_to_zip_ind))
   
@@ -21,7 +21,7 @@ rezip <- function(target_name, sb_group_xwalk, sb_group_ids, files_to_zip_ind, d
       setwd(file_dir)
       # Windows users: note that this may silently fail for you
       #   Please see: https://stackoverflow.com/a/52014909
-      zip_fn <- sprintf("toha_%s.zip", id)
+      zip_fn <- sprintf("%s_%s.zip", zip_out_prefix, id)
       if(file.exists(zip_fn)) file.remove(zip_fn)
       
       zip(file.path(cd, dest_dir, zip_fn), files = files_to_zip)
