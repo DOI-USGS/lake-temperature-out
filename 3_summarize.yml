@@ -30,4 +30,4 @@ targets:
       sb_group_ids = sb_group_ids, 
       files_to_zip_ind = '2_process/out/2_pgdl_lake_tasks.ind',
       dest_dir = I('3_summarize/tmp'),
-      zip_out_prefix = I('pb0_toha'))
+      zip_out_prefix = I('pgdl_toha'))
