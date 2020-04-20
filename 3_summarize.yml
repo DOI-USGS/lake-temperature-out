@@ -5,12 +5,15 @@ packages:
 
 sources:
   - 3_summarize/src/combine_files_to_zip.R
+  - 3_summarize/src/calculate_max_benthic_area.R
+  - 2_process/src/calculate_toha.R # Has the benthic area fxn
 
 targets:
   3_summarize:
     depends:
       - 3_summarize/out/3_summarize_zip_pb0_toha.yml
       - 3_summarize/out/3_summarize_zip_pgdl_toha.yml
+      - 3_summarize/out/max_benthic_areas.csv
 
   ### Zip up lake toha files by lake group ###
   
@@ -31,3 +34,13 @@ targets:
       files_to_zip_ind = '2_process/out/2_pgdl_lake_tasks.ind',
       dest_dir = I('3_summarize/tmp'),
       zip_out_prefix = I('pgdl_toha'))
+
+  ## Calculate max benthic area to use with TOHA areas --> TOHA as % Benthic Area ##
+  
+  all_lake_hypsography:
+    command: extract_hypsography(morphometry)
+  
+  3_summarize/out/max_benthic_areas.csv:
+    command: calculate_max_benthic_area(
+      target_name = target_name,
+      all_hypsos = all_lake_hypsography)
