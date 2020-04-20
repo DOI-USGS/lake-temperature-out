@@ -35,7 +35,7 @@ unzip_and_merge_files <- function(lake_ids, irradiance_zipfile, clarity_zipfile,
     
     return(tibble(filename = site_id_fn, hash = tools::md5sum(site_id_fn)))
   }) %>% 
-    purrr::reduce(bind_rows)
+    purrr::reduce(bind_rows) %>% filter(!filename == "") #remove empty
   
   merged_files
 }
