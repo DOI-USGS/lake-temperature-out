@@ -12,9 +12,6 @@ sources:
 targets:
   2_process:
     depends:
-      - morphometry
-      - 2_process_grp_tasks.yml
-      - 2_process/out/2_process_grp_tasks_completed.yml
       - 2_process/out/2_process_lake_tasks.ind
       - 2_process/out/2_pgdl_lake_tasks.ind
   

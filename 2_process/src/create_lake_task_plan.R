@@ -36,7 +36,7 @@ create_lake_tasks <- function(task_df_fn, log_folder){
     } 
   )
   
-  calculate_pb0_toha <- scipiper::create_task_step(
+  calculate_model_toha <- scipiper::create_task_step(
     step_name = toha_step_name,
     target_name = function(task_name, step_name, ...){
       
@@ -58,7 +58,7 @@ create_lake_tasks <- function(task_df_fn, log_folder){
   gif_task_plan <- scipiper::create_task_plan(
     task_names=tasks$site_id,
     task_steps=list(split_morphometry,
-      calculate_pb0_toha),
+      calculate_model_toha),
     add_complete=FALSE,
     final_steps=c(toha_step_name),
     ind_dir='2_process/log')

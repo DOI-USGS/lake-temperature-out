@@ -50,7 +50,7 @@ create_group_tasks <- function(task_ids, log_folder, irradiance_zips, clarity_zi
       )
     } 
   )
-  combine_pb0_zipped_files <- scipiper::create_task_step(
+  combine_model_zipped_files <- scipiper::create_task_step(
     step_name = 'combine_model_zipped_files',
     target_name = function(task_name, step_name, ...){
       sprintf("merged_model_data_%s", task_name)
@@ -73,7 +73,7 @@ create_group_tasks <- function(task_ids, log_folder, irradiance_zips, clarity_zi
     task_names=tasks$task_id,
     task_steps=list(
       get_lake_ids,
-      combine_pb0_zipped_files),
+      combine_model_zipped_files),
     add_complete=FALSE,
     final_steps=c('combine_model_zipped_files'),
     ind_dir='2_process/log')
