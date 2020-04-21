@@ -1,5 +1,5 @@
 
-calculate_max_benthic_area <- function(target_name, all_hypsos) {
+calculate_total_benthic_area <- function(target_name, all_hypsos) {
   
   purrr::map(all_hypsos, function(hypso) {
     sum(benthic_areas(hypso$H, hypso$A))
