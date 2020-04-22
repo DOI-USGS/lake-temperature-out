@@ -37,10 +37,7 @@ targets:
 
   ## Calculate total benthic area to use with TOHA areas --> TOHA as % Benthic Area ##
   
-  all_lake_hypsography:
-    command: extract_hypsography(morphometry)
-  
   3_summarize/out/total_benthic_areas.csv:
     command: calculate_total_benthic_area(
       target_name = target_name,
-      all_hypsos = all_lake_hypsography)
+      morphometry = morphometry)
