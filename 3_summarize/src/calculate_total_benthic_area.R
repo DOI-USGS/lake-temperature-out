@@ -2,7 +2,7 @@
 calculate_total_benthic_area <- function(target_name, all_hypsos) {
   
   purrr::map(all_hypsos, function(hypso) {
-    sum(benthic_areas(hypso$H, hypso$A))
+    sum(benthic_areas(hypso$depths, hypso$areas))
   }) %>%
     # `enframe` required me to update tibble (I had `2.1.3` and now have `3.0.1`)
     # Takes a list and creates a two-column data.frame (one column is the names, one is the values)
@@ -13,6 +13,12 @@ calculate_total_benthic_area <- function(target_name, all_hypsos) {
 }
 
 extract_hypsography <- function(morphometry) {
-  # Only keep depths (H) and areas (A)
-  purrr::map(morphometry, `[`, c("H", "A"))
+  # Only keep depths (converted from Heights, H) and areas (A)
+  purrr::map(morphometry,  function(m) {
+    hypsos <- data.frame(H = m$H, A = m$A) %>% 
+      mutate(depths = max(H) - H, areas = A) %>% 
+      arrange(depths) %>% 
+      select(depths, areas)
+  })
+  
 }

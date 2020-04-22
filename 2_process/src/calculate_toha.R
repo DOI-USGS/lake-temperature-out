@@ -101,12 +101,12 @@ benthic_areas <- function(depths, areas){
   # Verify that depths & areas are listed from top to bottom
   # Our "depths" are actually "heights" above sea level. So the 
   # smaller the height, the deeper that profile.
-  corrected_order <- order(depths, decreasing = TRUE)
+  corrected_order <- order(depths)
   depths <- depths[corrected_order]
   areas <- areas[corrected_order]
   
   # Verify that our assumptions are correct
-  stopifnot(tail(depths, 1) == min(depths)) # bottom of lake is last in order
+  stopifnot(tail(depths, 1) == max(depths)) # bottom of lake is last in order
   stopifnot(tail(areas, 1) == min(areas)) # bottom of lake is smallest area
   
   areas_lead <- c(areas[-1], NA)
