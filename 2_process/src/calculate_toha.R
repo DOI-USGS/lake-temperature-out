@@ -88,7 +88,14 @@ interp_hypso_to_match_temp_profiles <- function(wtr, hypso) {
   
   # Match hypso depths to water temperature profile depths
   matched_depths <- rLakeAnalyzer::get.offsets(wtr)
-  matched_areas <- approx(hypso$depths, hypso$areas, xout=matched_depths)$y
+  
+  # Linear relationship between depth and radius
+  hypso$radii <- sqrt(hypso$areas / pi)
+  matched_radii <- approx(hypso$depths, hypso$radii, xout=matched_depths)$y
+  
+  # Now calculate area from new radii
+  matched_areas <- pi * matched_radii^2
+  
   matched_hypso <- list(depths = matched_depths, areas = matched_areas)
   
   return(matched_hypso)
