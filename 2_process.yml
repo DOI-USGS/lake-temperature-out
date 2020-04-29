@@ -57,12 +57,18 @@ targets:
     command: scmake(
       target_names = I('2_pgdl_grp_tasks_completed.yml_promise'),
       remake_file = '2_pgdl_grp_tasks.yml')
+    depends: 
+      - 1_fetch/out/pgdl_temp_pred_downloaded.yml
+      - 1_fetch/out/irradiance_downloaded.yml
+      - 1_fetch/out/clarity_downloaded.yml
       
   2_process/out/2_process_grp_tasks_completed.yml:
-    command: scmake(
-      target_names = I('2_process_grp_tasks_completed.yml_promise'),
-      remake_file = '2_process_grp_tasks.yml')
-  
+    command: loop_tasks(task_plan = process_grp_tasks, 
+      task_makefile = '2_process_grp_tasks.yml')
+    depends: 
+      - 1_fetch/out/irradiance_downloaded.yml
+      - 1_fetch/out/pb0_temp_pred_downloaded.yml
+      - 1_fetch/out/clarity_downloaded.yml
   ### Calculate TOHA for each lake ###
   
   process_lake_tasks:
@@ -77,9 +83,8 @@ targets:
       final_targets = I('2_process/out/2_process_lake_tasks.ind'))
   
   2_process/out/2_process_lake_tasks.ind:
-    command: scmake(
-      target_names = I('2_process_lake_tasks.ind_promise'),
-      remake_file = '2_process_lake_tasks.yml')
+    command: loop_tasks(task_plan = process_lake_tasks,
+      task_makefile = '2_process_lake_tasks.yml')
     depends:
       - morphometry
 
@@ -95,6 +100,8 @@ targets:
       remake_file = I('2_process.yml'),
       final_targets = I('2_process/out/2_pgdl_lake_tasks.ind'))
   
+        #'2_process/tmp/pgdl_toha_nhdhr_120018569.csv', FAILED!!!Error in seq.int(0, to0 - from, by) : 'to' must be a finite number
+#In addition: There were 50 or more warnings (use warnings() to see the first 50)
   2_process/out/2_pgdl_lake_tasks.ind:
     command: scmake(
       target_names = I('2_pgdl_lake_tasks.ind_promise'),

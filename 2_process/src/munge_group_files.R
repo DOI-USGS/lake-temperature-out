@@ -12,23 +12,17 @@ unzip_and_merge_files <- function(lake_ids, irradiance_zipfile, clarity_zipfile,
     
     # Catch when a lake is missing some data and record what it is missing.
     if(length(c(irr_fn, kw_fn, temp_fn)) < 3) {
-      
-      missing_message <- sprintf("%s is missing %s", site_id, 
-                                 paste(stringi::stri_remove_empty(c(
-                                   ifelse(length(irr_fn) == 0, "irradiance", ""),
-                                   ifelse(length(kw_fn) == 0, "clarity", ""),
-                                   ifelse(length(temp_fn) == 0, "temperature", ""))), collapse = " & "))
-      message(missing_message)
+  
       site_id_fn <- ""
       
     } else {
-      
       site_id_fn <- sprintf(fn_out_template, site_id)
-      merged_data <- read_csv(irr_fn, col_types = cols()) %>% 
-        left_join(read_csv(kw_fn, col_types = cols()), by = "date") %>%
-        left_join(read_csv(temp_fn, col_types = cols()), by = "date") %>%
+      merged_data <- read_csv(irr_fn, col_types = cols(), progress = FALSE) %>% 
+        left_join(read_csv(kw_fn, col_types = cols()), by = "date", progress = FALSE) %>%
+        left_join(read_csv(temp_fn, col_types = cols()), by = "date", progress = FALSE) %>%
         mutate(site_id = site_id) %>% 
-        select(site_id, DateTime = date, io = rad_0, kd, everything())
+        select(site_id, DateTime = date, io = rad_0, kd, everything()) %>% 
+        filter(!is.na(temp_0))
       write_feather(merged_data, site_id_fn)
       
     }

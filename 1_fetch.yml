@@ -18,7 +18,7 @@ targets:
       - 1_fetch/out/clarity_downloaded.yml
   
   sb_dl_date:
-   command: c(I("2020-04-16"))
+   command: c(I("2020-04-25"))
   
   toha_sbid:
     command: c(I("5e5d0bb9e4b01d50924f2b36"))
@@ -53,7 +53,7 @@ targets:
       sb_id = toha_sbid, 
       keyword = I("pgdl_predictions"), 
       dest_folder = I("1_fetch/tmp"),
-      dummy = sb_dl_date)
+      dummy = I("2020-04-23"))
       
   1_fetch/out/pb0_temp_pred_downloaded.yml:
     command: download_sb_files(
