@@ -65,11 +65,14 @@ opti_thermal_habitat_subdaily <- function(current_date, wtr, io, kd, lat, lon, h
 #   calculating each vol map and then the areas.
 area_light_temp_threshold_shared <- function(wtr, kd, light_incident, irr_thresh=c(0,2000), wtr_thresh=c(0,25), hypso) {
   
+  # Upsample both hypsography & wtr so that they share depths
   updated_hypso <- interp_hypso_to_match_temp_profiles(wtr, hypso)
+  updated_wtr <- interp_temp_profiles_to_match_hypso(wtr, hypso)
+  
   depth_area_rel <- benthic_areas(updated_hypso$depths, updated_hypso$areas) # Calculate the depth to benthic area relationship
   
   light_map <- vol_light_map(kd, light_incident, irr_thresh, updated_hypso$depths)
-  wtr_map <- vol_temp_map(wtr, wtr_thresh) # wtr is just daily here; upsampled below to be able to compare to light
+  wtr_map <- vol_temp_map(updated_wtr, wtr_thresh) # wtr is just daily here; upsampled below to be able to compare to light
   
   # Upsample wtr (repeat values) to match dimensions of light_map, then compare light & temp
   wtr_upsampled_map <- matrix(wtr_map, ncol = ncol(wtr_map), nrow = length(light_incident), byrow=TRUE)
@@ -87,11 +90,51 @@ area_light_temp_threshold_shared <- function(wtr, kd, light_incident, irr_thresh
 interp_hypso_to_match_temp_profiles <- function(wtr, hypso) {
   
   # Match hypso depths to water temperature profile depths
-  matched_depths <- rLakeAnalyzer::get.offsets(wtr)
-  matched_areas <- approx(hypso$depths, hypso$areas, xout=matched_depths)$y
+  matched_depths <- c(hypso$depths, rLakeAnalyzer::get.offsets(wtr)) %>% unique() %>% sort
+  
+  # Linear relationship between depth and radius
+  hypso$radii <- sqrt(hypso$areas / pi)
+  matched_radii <- approx(hypso$depths, hypso$radii, xout=matched_depths)$y
+  
+  # Now calculate area from new radii
+  matched_areas <- pi * matched_radii^2
+  
   matched_hypso <- list(depths = matched_depths, areas = matched_areas)
   
   return(matched_hypso)
+}
+
+# Assumes that `wtr` colnames start with `temp_`
+interp_temp_profiles_to_match_hypso <- function(wtr, hypso) {
+  
+  matched_depths <- c(hypsos$depths, rLakeAnalyzer::get.offsets(wtr)) %>% unique() %>% sort
+  
+  # Figure out which will need to have interpolated wtr values
+  new_depths_i <- which(!matched_depths %in% rLakeAnalyzer::get.offsets(wtr))
+  
+  # Add new empty columns for new wtr depths & sort the data frame
+  wtr_matched <- wtr
+  wtr_matched[, paste0("temp_", matched_depths[new_depths_i])] <- NA
+  wtr_matched <- wtr_matched[, order(rLakeAnalyzer::get.offsets(wtr_matched))]
+  
+  # Interpolate wtr for each new column & then fill into the real data.frame
+  wtr_matched[, new_depths_i] <- purrr::map(new_depths_i, function(i) {
+    if(i == 1) {
+      # If the current new depth is the first depth in the profile, match the next wtr
+      wtr_new <- wtr_matched[i+1]
+    } else if(is.na(matched_depths[i+1])) {
+      # If the current new depth is the last depth in the profile, match the previous wtr
+      wtr_new <- wtr_matched[i-1] 
+    } else {
+      depth_ratio <- (matched_depths[i] - matched_depths[i-1]) / (matched_depths[i+1] - matched_depths[i-1])
+      wtr_new <- wtr_matched[i-1] + depth_ratio*(wtr_matched[i+1] - wtr_matched[i-1])
+    }
+    names(wtr_new) <- paste0("temp_", matched_depths[i])
+    return(wtr_new)
+  }) %>% 
+    purrr::reduce(cbind) 
+  
+  return(wtr_matched)
 }
 
 # Produces a vector of length n-1
