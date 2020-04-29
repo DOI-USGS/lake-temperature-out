@@ -87,7 +87,7 @@ area_light_temp_threshold_shared <- function(wtr, kd, light_incident, irr_thresh
 interp_hypso_to_match_temp_profiles <- function(wtr, hypso) {
   
   # Match hypso depths to water temperature profile depths
-  matched_depths <- rLakeAnalyzer::get.offsets(wtr)
+  matched_depths <- c(hypso$depths, rLakeAnalyzer::get.offsets(wtr)) %>% unique() %>% sort
   
   # Linear relationship between depth and radius
   hypso$radii <- sqrt(hypso$areas / pi)
