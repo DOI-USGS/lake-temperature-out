@@ -123,12 +123,17 @@ interp_temp_profiles_to_match_hypso <- function(wtr, hypso) {
     if(i == 1) {
       # If the current new depth is the first depth in the profile, match the next wtr
       wtr_new <- wtr_matched[[i+1]]
-    } else if(is.na(matched_depths[i+1])) {
-      # If the current new depth is the last depth in the profile, match the previous wtr
-      wtr_new <- wtr_matched[[i-1]]
     } else {
-      depth_ratio <- (matched_depths[i] - matched_depths[i-1]) / (matched_depths[i+1] - matched_depths[i-1])
-      wtr_new <- wtr_matched[[i-1]] + depth_ratio*(wtr_matched[[i+1]] - wtr_matched[[i-1]])
+      depth_next <- matched_depths[i+1]
+      wtr_prev <- wtr_matched[[i-1]]
+      if(is.na(depth_next)) {
+        # If the current new depth is the last depth in the profile, match the previous wtr
+        wtr_new <- wtr_prev
+      } else {
+        depth_prev <- matched_depths[i-1]
+        depth_ratio <- (matched_depths[i] - depth_prev) / (depth_next - depth_prev)
+        wtr_new <- wtr_prev + depth_ratio*(wtr_matched[[i+1]] - wtr_prev)
+      }
     }
     return(wtr_new)
   }) 
