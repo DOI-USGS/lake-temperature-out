@@ -3,6 +3,7 @@ target_default: 2_process
 packages:
   - dplyr
   - tidyr
+  - scipiper
 
 sources:
   - 2_process/src/process_helpers.R
@@ -87,6 +88,7 @@ targets:
       task_makefile = '2_process_lake_tasks.yml')
     depends:
       - morphometry
+      - 2_process/out/2_process_grp_tasks_completed.yml
 
    ## now PGDL
   pgdl_lake_tasks:
