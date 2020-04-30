@@ -130,7 +130,6 @@ interp_temp_profiles_to_match_hypso <- function(wtr, hypso) {
       depth_ratio <- (matched_depths[i] - matched_depths[i-1]) / (matched_depths[i+1] - matched_depths[i-1])
       wtr_new <- wtr_matched[i-1] + depth_ratio*(wtr_matched[i+1] - wtr_matched[i-1])
     }
-    names(wtr_new) <- paste0("temp_", matched_depths[i])
     return(wtr_new)
   }) %>% 
     purrr::reduce(cbind) 
