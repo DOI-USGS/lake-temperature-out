@@ -119,7 +119,7 @@ interp_temp_profiles_to_match_hypso <- function(wtr, hypso) {
   wtr_matched <- wtr_matched[, order(rLakeAnalyzer::get.offsets(wtr_matched))]
   
   # Interpolate wtr for each new column & then fill into the real data.frame
-  wtr_matched[, new_depths_i] <- purrr::map(new_depths_i, function(i) {
+  wtr_matched[, new_depths_i] <- purrr::map_dfc(new_depths_i, function(i) {
     if(i == 1) {
       # If the current new depth is the first depth in the profile, match the next wtr
       wtr_new <- wtr_matched[[i+1]]
@@ -131,8 +131,7 @@ interp_temp_profiles_to_match_hypso <- function(wtr, hypso) {
       wtr_new <- wtr_matched[[i-1]] + depth_ratio*(wtr_matched[[i+1]] - wtr_matched[[i-1]])
     }
     return(wtr_new)
-  }) %>% 
-    purrr::reduce(cbind) 
+  }) 
   
   return(wtr_matched)
 }
