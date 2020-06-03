@@ -18,7 +18,7 @@ targets:
       - 1_fetch/out/clarity_downloaded.yml
   
   sb_dl_date:
-   command: c(I("2020-04-16"))
+   command: c(I("2020-04-29"))
   
   toha_sbid:
     command: c(I("5e5d0bb9e4b01d50924f2b36"))
