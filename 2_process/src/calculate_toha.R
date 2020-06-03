@@ -106,33 +106,43 @@ interp_hypso_to_match_temp_profiles <- function(wtr, hypso) {
 
 # Assumes that `wtr` colnames start with `temp_`
 interp_temp_profiles_to_match_hypso <- function(wtr, hypso) {
-  
-  matched_depths <- c(hypso$depths, rLakeAnalyzer::get.offsets(wtr)) %>% unique() %>% sort
+
+  wtr_depths <- rLakeAnalyzer::get.offsets(wtr)
+  matched_depths <- c(hypso$depths, wtr_depths) %>% unique() %>% sort
   
   # Figure out which will need to have interpolated wtr values
-  new_depths_i <- which(!matched_depths %in% rLakeAnalyzer::get.offsets(wtr))
+  new_depths_i <- which(!matched_depths %in% wtr_depths)
   
   # Add new empty columns for new wtr depths & sort the data frame
   wtr_matched <- wtr
   wtr_matched[, paste0("temp_", matched_depths[new_depths_i])] <- NA
   wtr_matched <- wtr_matched[, order(rLakeAnalyzer::get.offsets(wtr_matched))]
   
-  # Interpolate wtr for each new column & then fill into the real data.frame
-  wtr_matched[, new_depths_i] <- purrr::map(new_depths_i, function(i) {
-    if(i == 1) {
-      # If the current new depth is the first depth in the profile, match the next wtr
-      wtr_new <- wtr_matched[i+1]
-    } else if(is.na(matched_depths[i+1])) {
-      # If the current new depth is the last depth in the profile, match the previous wtr
-      wtr_new <- wtr_matched[i-1] 
-    } else {
-      depth_ratio <- (matched_depths[i] - matched_depths[i-1]) / (matched_depths[i+1] - matched_depths[i-1])
-      wtr_new <- wtr_matched[i-1] + depth_ratio*(wtr_matched[i+1] - wtr_matched[i-1])
-    }
-    names(wtr_new) <- paste0("temp_", matched_depths[i])
-    return(wtr_new)
-  }) %>% 
-    purrr::reduce(cbind) 
+  # Interpolate wtr for each new column
+  
+  # First handle edge cases:
+  
+  # If a new depth is the first one ... 
+  if(any(new_depths_i == 1)) {
+    wtr_matched[, 1] <- wtr_matched[, 2] # Set the first depth wtr values equal to the next wtr depth values
+    new_depths_i <- tail(new_depths_i, -1) # Now remove the first depth from the list of depths to interpolate
+  } 
+  
+  # If a new depth is the last one ... 
+  last_depth <- length(matched_depths)
+  if(any(new_depths_i == last_depth)) {
+    wtr_matched[, last_depth] <- wtr_matched[, last_depth-1] # Set the last depth wtr values equal to the previous wtr depth values
+    new_depths_i <- head(new_depths_i, -1) # Now remove the last depth from the list of depths to interpolate
+  } 
+  
+  wtr_next <- wtr_matched[, new_depths_i + 1, drop=FALSE]
+  wtr_prev <- wtr_matched[, new_depths_i - 1, drop=FALSE]
+  depth_next <- matched_depths[new_depths_i + 1]
+  depth_prev <- matched_depths[new_depths_i - 1]
+  
+  depth_ratio <- (matched_depths[new_depths_i] - depth_prev) / (depth_next - depth_prev)
+  # Matrix operations to multiply data.frame by vector, see https://stackoverflow.com/questions/36111444/multiply-columns-in-a-data-frame-by-a-vector
+  wtr_matched[, new_depths_i] <- wtr_prev + as.matrix(wtr_next - wtr_prev) %*% diag(depth_ratio)
   
   return(wtr_matched)
 }
