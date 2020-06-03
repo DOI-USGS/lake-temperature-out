@@ -107,7 +107,7 @@ interp_hypso_to_match_temp_profiles <- function(wtr, hypso) {
 # Assumes that `wtr` colnames start with `temp_`
 interp_temp_profiles_to_match_hypso <- function(wtr, hypso) {
   
-  matched_depths <- c(hypsos$depths, rLakeAnalyzer::get.offsets(wtr)) %>% unique() %>% sort
+  matched_depths <- c(hypso$depths, rLakeAnalyzer::get.offsets(wtr)) %>% unique() %>% sort
   
   # Figure out which will need to have interpolated wtr values
   new_depths_i <- which(!matched_depths %in% rLakeAnalyzer::get.offsets(wtr))
