@@ -28,6 +28,7 @@ opti_thermal_habitat_subdaily_continuous <- function(current_date, wtr, io, kd, 
 # Vectorized function
 optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper) {
   
+  stopifnot(all(hypso$depths == cummax(hypso$depths))) # Stop if hypso is not in order
   # Expecting only one Kd per day but if not, needs to match length of I_0
   stopifnot(length(Kd) == 1 || length(Kd) == length(I_0))
   
@@ -78,6 +79,8 @@ optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper) {
 
 # Now vectorized (except for one apply fxn)
 thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
+  
+  stopifnot(all(hypso$depths == cummax(hypso$depths))) # Stop if hypso is not in order
   
   z_max <- tail(hypso$depths, 1)
   z_surface <- head(hypso$depths, 1)
