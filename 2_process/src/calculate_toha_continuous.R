@@ -87,13 +87,13 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
   wtr_bottom <- wtr_df[[which(z_wtr == z_max)]]
   
   ##### Find exact depths of wtr thresholds 
-  Z1 <- apply(wtr_df, 1, function(wtr_row) {
+  Z1 <- apply(wtr_df, MARGIN = 1, function(wtr_row) {
     # Using apply since these two actions need to be done per row
     wtr <- as.vector(t(wtr_row))
     approx(wtr, z_wtr, xout=wtr_upper)$y
   })
   
-  Z2 <- apply(wtr_df, 1, function(wtr_row) {
+  Z2 <- apply(wtr_df, MARGIN = 1, function(wtr_row) {
     # Using apply since these two actions need to be done per row
     wtr <- as.vector(t(wtr_row))
     approx(wtr, z_wtr, xout=wtr_lower)$y
@@ -190,7 +190,7 @@ thermal_optical_habitat_area <- function(tha_df, oha_df, hypso) {
     all_Zs_to_calc <- t(matrix(c(oha_df$Z1[to_calc], oha_df$Z2[to_calc], 
                                  tha_df$Z1[to_calc], tha_df$Z2[to_calc]),
                                ncol = 4))
-    all_Zs_sorted <- apply(all_Zs_to_calc, 2, sort) # sort each column's depths
+    all_Zs_sorted <- apply(all_Zs_to_calc, MARGIN = 2, sort) # sort each column's depths
     
     # Find the new Z's - should be the two middle values when you sort each column
     # So i = 2, and i = 3 (there are 4 columns, Z1 & Z2 for both THA & OHA)
