@@ -89,8 +89,8 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
   adjusted_depths <- c(hypso$depths, z_surface, z_max) %>% unique() %>% sort()
   hypso <- resample_hypso(hypso, adjusted_depths)
   
-  wtr_surface <- wtr_df[[which(z_wtr == z_surface)]]
-  wtr_bottom <- wtr_df[[which(z_wtr == z_max)]]
+  wtr_surface <- wtr_df[[which.min(z_wtr)]] # wtr_surface will be whatever the top-most wtr is
+  wtr_bottom <- wtr_df[[which.max(z_wtr)]] # wtr_bottom will be whatever the bottom-most wtr is
   
   ##### Find exact depths of wtr thresholds 
   Z1_Z2 <- apply(wtr_df, MARGIN = 1, function(wtr_row) {
