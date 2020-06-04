@@ -33,7 +33,8 @@ optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper) {
   stopifnot(length(Kd) == 1 || length(Kd) == length(I_0))
   
   z_max <- tail(hypso$depths, 1)
-  z_surface <- head(hypso$depths, 1)
+  z_surface <- 0 # always 0, might need to resample hypso
+  if(!z_surface %in% hypso$depths) hypso <- resample_hypso(hypso, c(0, hypso$depths))
   
   ##### Find exact depths of irr thresholds 
   
@@ -82,9 +83,11 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
   
   stopifnot(all(hypso$depths == cummax(hypso$depths))) # Stop if hypso is not in order
   
-  z_max <- tail(hypso$depths, 1)
-  z_surface <- head(hypso$depths, 1)
   z_wtr <- rLakeAnalyzer::get.offsets(wtr_df)
+  z_max <- max(hypso$depths, z_wtr) # bottom could be in hypso or wtr
+  z_surface <- 0 # always 0, might be in hypso, might not
+  adjusted_depths <- c(hypso$depths, z_surface, z_max) %>% unique() %>% sort()
+  hypso <- resample_hypso(hypso, adjusted_depths)
   
   wtr_surface <- wtr_df[[which(z_wtr == z_surface)]]
   wtr_bottom <- wtr_df[[which(z_wtr == z_max)]]
