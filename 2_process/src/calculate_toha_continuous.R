@@ -87,17 +87,13 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
   wtr_bottom <- wtr_df[[which(z_wtr == z_max)]]
   
   ##### Find exact depths of wtr thresholds 
-  Z1 <- apply(wtr_df, MARGIN = 1, function(wtr_row) {
+  Z1_Z2 <- apply(wtr_df, MARGIN = 1, function(wtr_row) {
     # Using apply since these two actions need to be done per row
     wtr <- as.vector(t(wtr_row))
-    approx(wtr, z_wtr, xout=wtr_upper)$y
+    approx(wtr, z_wtr, xout=c(wtr_upper, wtr_lower))$y
   })
-  
-  Z2 <- apply(wtr_df, MARGIN = 1, function(wtr_row) {
-    # Using apply since these two actions need to be done per row
-    wtr <- as.vector(t(wtr_row))
-    approx(wtr, z_wtr, xout=wtr_lower)$y
-  })
+  Z1 <- Z1_Z2[1,]
+  Z2 <- Z1_Z2[2,]
   
   ##### Checks before calculating areas
   completely_below_lake <- which(wtr_bottom > wtr_upper) # if THA is completely below lake, benthic area is 0 (too hot)
