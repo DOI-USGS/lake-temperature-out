@@ -41,20 +41,16 @@ optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper) {
   Z2 <- log( I_lower / I_0) / -Kd
   
   ##### Checks before calculating areas
-  completely_below_lake <- which(Z1 > z_max) # if OHA is completely below lake, benthic area is 0 (too bright)
-  completely_above_lake <- which(I_0 < I_lower) # if OHA is completely above lake, benthic area is 0 (too dark)
-  benth_0 <- c(completely_below_lake, completely_above_lake)
-  
-  # Set Zs to NA so area calc is quicker (?)
-  Z1[benth_0] <- NA 
-  Z2[benth_0] <- NA
+  completely_below_lake <- Z1 > z_max # if OHA is completely below lake, benthic area is 0 (too bright)
+  completely_above_lake <- I_0 < I_lower # if OHA is completely above lake, benthic area is 0 (too dark)
+  benth_0 <- completely_below_lake | completely_above_lake
   
   # if OHA extends above lake, use the surface as Z1 to calc OHA
-  extends_above_lake <- which(Z1 < z_surface)
+  extends_above_lake <- Z1 < z_surface & !completely_above_lake
   Z1[extends_above_lake] <- z_surface
   
   # if OHA extends below lake, use the bottom as Z2 to calc OHA
-  extends_below_lake <- which(Z2 >= z_max) # also include those with Z2 == z_max
+  extends_below_lake <- Z2 >= z_max & !completely_below_lake # also include those with Z2 == z_max
   Z2[extends_below_lake] <- z_max
   
   ##### Create hypso at these different depths
@@ -67,12 +63,11 @@ optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper) {
   
   ##### Final benthic area checks
   
-  # Set benthic areas to zero based on above criteria
-  benthic_area[completely_below_lake] <- 0 
-  benthic_area[completely_above_lake] <- 0
-  
   # Add lake bottom if bottom of optical habitat 
   benthic_area[extends_below_lake] <- benthic_area[extends_below_lake] + tail(hypso$areas, 1)
+  
+  # Set benthic areas to zero based on above criteria
+  benthic_area[benth_0] <- 0 
   
   return(data.frame(Z1 = Z1, Z2 = Z2, habitat = benthic_area))
 }
@@ -99,20 +94,16 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
   Z2 <- Z1_Z2[2,]
   
   ##### Checks before calculating areas
-  completely_below_lake <- which(wtr_bottom > wtr_upper) # if THA is completely below lake, benthic area is 0 (too hot)
-  completely_above_lake <- which(wtr_surface < wtr_lower) # if THA is completely above lake, benthic area is 0 (too cold)
-  benth_0 <- c(completely_below_lake, completely_above_lake)
-  
-  # Set Zs to NA so area calc is quicker (?)
-  Z1[benth_0] <- NA 
-  Z2[benth_0] <- NA
+  completely_below_lake <- wtr_bottom > wtr_upper # if THA is completely below lake, benthic area is 0 (too hot)
+  completely_above_lake <- wtr_surface < wtr_lower # if THA is completely above lake, benthic area is 0 (too cold)
+  benth_0 <- completely_below_lake | completely_above_lake
   
   # if THA extends above lake, use the surface as Z1 to calc THA
-  extends_above_lake <- which(wtr_surface < wtr_upper)
+  extends_above_lake <- wtr_surface < wtr_upper & !completely_above_lake
   Z1[extends_above_lake] <- z_surface
   
   # if THA extends below lake, use the bottom as Z2 to calc THA
-  extends_below_lake <- which(wtr_bottom > wtr_lower) 
+  extends_below_lake <- wtr_bottom > wtr_lower & !completely_below_lake
   Z2[extends_below_lake] <- z_max
   
   ##### Create hypso at these different depths
@@ -129,8 +120,7 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
   benthic_area[extends_below_lake] <- benthic_area[extends_below_lake] + tail(hypso$areas, 1)
   
   # Set benthic areas to zero based on above criteria
-  benthic_area[completely_below_lake] <- 0 
-  benthic_area[completely_above_lake] <- 0
+  benthic_area[benth_0] <- 0 
   
   return(data.frame(Z1 = Z1, Z2 = Z2, habitat = benthic_area))
 }
