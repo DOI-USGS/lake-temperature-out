@@ -212,8 +212,9 @@ thermal_optical_habitat_area <- function(tha_df, oha_df, hypso) {
 
 resample_hypso <- function(hypso, new_depths) {
   
+  # `rule = 2`: repeats top or bottom known hypso for any depths outside of known hypso
   hypso$radii <- sqrt(hypso$areas / pi)
-  new_radii <- approx(hypso$depths, hypso$radii, xout=new_depths)$y
+  new_radii <- approx(hypso$depths, hypso$radii, xout=new_depths, rule = 2)$y
   
   # Now calculate area from new radii
   new_areas <- pi * new_radii^2
