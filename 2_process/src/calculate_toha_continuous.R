@@ -59,7 +59,7 @@ optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper) {
   
   ##### Use areas and depths at thresholds to calculate benthic area
   
-  benthic_area <- calc_benthic_area(Z1, Z2, A1, A2)
+  benthic_area <- calc_benthic_area_incl_hypso(Z1, Z2, A1, A2, hypso)
   
   ##### Final benthic area checks
   
@@ -113,7 +113,7 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
   
   ##### Use areas and depths at thresholds to calculate benthic area
   
-  benthic_area <- calc_benthic_area(Z1, Z2, A1, A2)
+  benthic_area <- calc_benthic_area_incl_hypso(Z1, Z2, A1, A2, hypso)
   
   ##### Final benthic area checks
   
@@ -192,7 +192,8 @@ thermal_optical_habitat_area <- function(tha_df, oha_df, hypso) {
     
     ##### Use areas and depths at thresholds to calculate benthic area for TOHA
     
-    benthic_area <- calc_benthic_area(Z1, Z2, A1, A2)
+    benthic_area <- calc_benthic_area_incl_hypso(Z1, Z2, A1, A2, hypso)
+    
     toha[to_calc] <- benthic_area
   }
   
@@ -220,4 +221,27 @@ calc_benthic_area <- function(Z1, Z2, A1, A2) {
   benthic_area <- trap_length * trap_height
   
   return(benthic_area)
+}
+
+calc_benthic_area_incl_hypso <- function(Z1, Z2, A1, A2, hypso) {
+  # Include hypsographic information to take known depth/areas relationships
+  #   that are between Z1 and Z2 into account. Using `sapply` to be able
+  #   to keep Z1 and Z2 vectorized and get benthic area for each combo returned. 
+  
+  stopifnot(length(Z1) == length(Z2))
+  
+  apply(matrix(c(Z1, Z2, A1, A2), ncol=length(Z1), nrow = 4, 
+               byrow = TRUE, list(c("Z1", "Z2", "A1", "A2"))), 
+        MARGIN = 2, FUN = function(mat_col) {
+          depths_between_Z1_Z2 <- hypso$depths > mat_col[["Z1"]] & hypso$depths < mat_col[["Z2"]]
+          Z1_to_calc <- c(mat_col[["Z1"]], hypso$depths[depths_between_Z1_Z2])
+          Z2_to_calc <- c(hypso$depths[depths_between_Z1_Z2], mat_col[["Z2"]])
+          
+          A1_to_calc <- c(mat_col[["A1"]], hypso$areas[depths_between_Z1_Z2])
+          A2_to_calc <- c(hypso$areas[depths_between_Z1_Z2], mat_col[["A2"]])
+          
+          slice_benth_areas <- calc_benthic_area(Z1_to_calc, Z2_to_calc, A1_to_calc, A2_to_calc)
+          total_benth_area <- sum(slice_benth_areas)
+          return(total_benth_area)
+        })
 }
