@@ -75,6 +75,7 @@ optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper) {
 # Now vectorized (except for one apply fxn)
 thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
   
+  stopifnot(!any(is.na(wtr_df))) # NA wtr columns should be removed before this fxn
   stopifnot(all(hypso$depths == cummax(hypso$depths))) # Stop if hypso is not in order
   
   z_wtr <- rLakeAnalyzer::get.offsets(wtr_df)
