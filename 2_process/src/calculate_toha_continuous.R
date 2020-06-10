@@ -86,10 +86,20 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
   wtr_bottom <- wtr_df[[which.max(z_wtr)]] # wtr_bottom will be whatever the bottom-most wtr is
   
   ##### Find exact depths of wtr thresholds 
+  
   Z1_Z2 <- apply(wtr_df, MARGIN = 1, function(wtr_row) {
     # Using apply since these two actions need to be done per row
     wtr <- as.vector(t(wtr_row))
-    approx(wtr, z_wtr, xout=c(wtr_upper, wtr_lower))$y
+    if(all.equal(wtr, wtr)) {
+      # In a well-mixed lake, it is possible for all wtr values to be the same
+      # which causes approx to throw an error. Return NAs for the Zs and let
+      # checks below determine if benth area is all (or partially) above or 
+      # below the lake and set Zs based on that.
+      Z1_Z2 <- c(NA,NA)
+    } else {
+      Z1_Z2 <- approx(wtr, z_wtr, xout=c(wtr_upper, wtr_lower))$y
+    }
+    return(Z1_Z2)
   })
   Z1 <- Z1_Z2[1,]
   Z2 <- Z1_Z2[2,]
@@ -121,7 +131,7 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
   benthic_area[extends_below_lake] <- benthic_area[extends_below_lake] + tail(hypso$areas, 1)
   
   # Set benthic areas to zero based on above criteria
-  benthic_area[benth_0] <- 0 
+  benthic_area[benth_0] <- 0
   
   return(data.frame(Z1 = Z1, Z2 = Z2, habitat = benthic_area))
 }
