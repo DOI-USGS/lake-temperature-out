@@ -90,7 +90,7 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
   Z1_Z2 <- apply(wtr_df, MARGIN = 1, function(wtr_row) {
     # Using apply since these two actions need to be done per row
     wtr <- as.vector(t(wtr_row))
-    if(all.equal(wtr, wtr)) {
+    if(length(unique(wtr)) == 1) {
       # In a well-mixed lake, it is possible for all wtr values to be the same
       # which causes approx to throw an error. Return NAs for the Zs and let
       # checks below determine if benth area is all (or partially) above or 
