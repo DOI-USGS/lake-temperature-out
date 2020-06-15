@@ -55,6 +55,11 @@ optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper) {
   completely_above_lake <- I_0 < I_lower # if OHA is completely above lake, benthic area is 0 (too dark)
   benth_0 <- completely_below_lake | completely_above_lake
   
+  # If I_0 == 0, then Z1 and Z1 become -Inf. They should be
+  #   be 0 before we return to a user. 
+  Z1[I_0 == 0] <- 0
+  Z2[I_0 == 0] <- 0
+  
   # if OHA extends above lake, use the surface as Z1 to calc OHA
   extends_above_lake <- Z1 < z_surface & !completely_above_lake
   Z1[extends_above_lake] <- z_surface
