@@ -11,6 +11,14 @@ calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
     arrange(depths) %>% 
     select(depths, areas)
   
+  # precalculate benthic areas for each known slice, rather than doing
+  # this for each time timestep
+  cum_benthic_area <- cumsum(calc_benthic_area(
+    hypsos$depths[-length(hypsos$depths)],
+    hypsos$depths[-1],
+    hypsos$areas[-length(hypsos$areas)],
+    hypsos$areas[-1]))
+  
   toha_out <- purrr::map(1:nrow(site_data), function(r) {
     opti_thermal_habitat_subdaily(
       current_date = site_data$DateTime[r],
@@ -21,7 +29,8 @@ calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
       lon = morphometry$longitude, 
       hypsos = hypsos, 
       irr_thresh = c(0.0762, 0.6476), 
-      wtr_thresh = c(11,25))
+      wtr_thresh = c(11,25),
+      cum_ba = cum_benthic_area)
   }) %>% 
     purrr::reduce(bind_rows) %>% 
     mutate(date = site_data$DateTime) %>% # Add the date column
@@ -44,24 +53,25 @@ calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
 #' @param hypsos 
 #' @param irr_thresh
 #' @param wtr_thresh
+#' @param cum_ba cumulative sum of benthic areas from known hypsography
 #' 
 #' @return data.frame (1 row, 3 columns); columns are `opti_hab`, `therm_hab`, and `opti_therm_hab` 
 #' for optical habitat, thermal habitat, and optical thermal habitat, respectively.
 #' 
-opti_thermal_habitat_subdaily <- function(current_date, wtr, io, kd, lat, lon, hypsos, irr_thresh, wtr_thresh) {
+opti_thermal_habitat_subdaily <- function(current_date, wtr, io, kd, lat, lon, hypsos, irr_thresh, wtr_thresh, cum_ba) {
   
   na_depth_profiles <- sapply(wtr, function(x) { all(is.na(x)) })
   wtr_rmNA <- wtr[, !na_depth_profiles] # remove any temp profiles that are NA
   
   io <- mda.lakes::create_irr_day_cycle(lat,lon, dates=current_date, irr_mean = io, by='min')
   
-  oha_df <- optical_habitat_area(io[[2]], kd, hypsos, irr_thresh[1], irr_thresh[2])
-  tha_df <- thermal_habitat_area(wtr_rmNA, hypsos, wtr_thresh[1], wtr_thresh[2])
+  oha_df <- optical_habitat_area(io[[2]], kd, hypsos, irr_thresh[1], irr_thresh[2], cum_ba)
+  tha_df <- thermal_habitat_area(wtr_rmNA, hypsos, wtr_thresh[1], wtr_thresh[2], cum_ba)
   
   # Upsample tha (repeat values) to match the number of oha values (subdaily)
   # Will even work if `nrow(wtr_rmNA) > 1`
   tha_upsampled <- tha_df %>% slice(rep(1:n(), each = nrow(oha_df)))
-  toha <- thermal_optical_habitat_area(tha_upsampled, oha_df, hypsos)
+  toha <- thermal_optical_habitat_area(tha_upsampled, oha_df, hypsos, cum_ba)
   
   # Divide by number of timesteps to get average area per day
   oha_daily <- sum(oha_df$habitat)/nrow(oha_df) 
@@ -85,7 +95,7 @@ opti_thermal_habitat_subdaily <- function(current_date, wtr, io, kd, lat, lon, h
 }
 
 # Vectorized function
-optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper) {
+optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper, cum_ba) {
   
   stopifnot(all(hypso$depths == cummax(hypso$depths))) # Stop if hypso is not in order
   # Expecting only one Kd per day but if not, needs to match length of I_0
@@ -123,7 +133,7 @@ optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper) {
   
   ##### Use areas and depths at thresholds to calculate benthic area
   
-  benthic_area <- calc_benthic_area_incl_hypso(Z1, Z2, A1, A2, hypso)
+  benthic_area <- calc_benthic_area_incl_hypso(Z1, Z2, A1, A2, hypso, cum_ba)
   
   ##### Final benthic area checks
   
@@ -137,7 +147,7 @@ optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper) {
 }
 
 # Now vectorized (except for one apply fxn)
-thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
+thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper, cum_ba) {
   
   stopifnot(!any(is.na(wtr_df))) # NA wtr columns should be removed before this fxn
   stopifnot(all(hypso$depths == cummax(hypso$depths))) # Stop if hypso is not in order
@@ -187,7 +197,7 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
   
   ##### Use areas and depths at thresholds to calculate benthic area
   
-  benthic_area <- calc_benthic_area_incl_hypso(Z1, Z2, A1, A2, hypso)
+  benthic_area <- calc_benthic_area_incl_hypso(Z1, Z2, A1, A2, hypso, cum_ba)
   
   ##### Final benthic area checks
   
@@ -201,7 +211,7 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper) {
 }
 
 # Returns vector, not data.frame
-thermal_optical_habitat_area <- function(tha_df, oha_df, hypso) {
+thermal_optical_habitat_area <- function(tha_df, oha_df, hypso, cum_ba) {
   
   stopifnot(nrow(tha_df) == nrow(oha_df))
   
@@ -266,7 +276,7 @@ thermal_optical_habitat_area <- function(tha_df, oha_df, hypso) {
     
     ##### Use areas and depths at thresholds to calculate benthic area for TOHA
     
-    benthic_area <- calc_benthic_area_incl_hypso(Z1, Z2, A1, A2, hypso)
+    benthic_area <- calc_benthic_area_incl_hypso(Z1, Z2, A1, A2, hypso, cum_ba)
     
     toha[to_calc] <- benthic_area
   }
@@ -297,25 +307,60 @@ calc_benthic_area <- function(Z1, Z2, A1, A2) {
   return(benthic_area)
 }
 
-calc_benthic_area_incl_hypso <- function(Z1, Z2, A1, A2, hypso) {
+calc_benthic_area_incl_hypso <- function(Z1, Z2, A1, A2, hypso, cum_ba) {
   # Include hypsographic information to take known depth/areas relationships
-  #   that are between Z1 and Z2 into account. Using `sapply` to be able
+  #   that are between Z1 and Z2 into account. Using `sapply` at the end to be able
   #   to keep Z1 and Z2 vectorized and get benthic area for each combo returned. 
+  
+  # This function assumes hypso$depths and hypso$areas are sorted top to bottom
+  # and Z1<Z2, A1>A2
   
   stopifnot(length(Z1) == length(Z2))
   
-  apply(matrix(c(Z1, Z2, A1, A2), ncol=length(Z1), nrow = 4, 
-               byrow = TRUE, list(c("Z1", "Z2", "A1", "A2"))), 
-        MARGIN = 2, FUN = function(mat_col) {
-          depths_between_Z1_Z2 <- hypso$depths > mat_col[["Z1"]] & hypso$depths < mat_col[["Z2"]]
-          Z1_to_calc <- c(mat_col[["Z1"]], hypso$depths[depths_between_Z1_Z2])
-          Z2_to_calc <- c(hypso$depths[depths_between_Z1_Z2], mat_col[["Z2"]])
-          
-          A1_to_calc <- c(mat_col[["A1"]], hypso$areas[depths_between_Z1_Z2])
-          A2_to_calc <- c(hypso$areas[depths_between_Z1_Z2], mat_col[["A2"]])
-          
-          slice_benth_areas <- calc_benthic_area(Z1_to_calc, Z2_to_calc, A1_to_calc, A2_to_calc)
-          total_benth_area <- sum(slice_benth_areas)
-          return(total_benth_area)
-        })
+  # Find which hypso depths are just above the Z1s & Z2s
+  top_interval <- findInterval(Z1, hypso$depths)
+  bottom_interval <- findInterval(Z2, hypso$depths)
+  
+  # Create vector of known BA for known depths between Z1 & Z2
+  middle_benthic_areas <- rep(0, length(Z1))
+  ba_to_use <- top_interval + 1 < bottom_interval
+  middle_benthic_areas[ba_to_use] <- 
+    cum_ba[bottom_interval[ba_to_use]-1] - 
+    cum_ba[top_interval[ba_to_use]]
+  
+  # If there are no known depths between Z1 & Z2, then there is
+  # no middle area and we should set bottom & top interval to NA
+  no_middle_area <- bottom_interval == top_interval 
+  bottom_interval[no_middle_area] <- NA
+  top_interval[no_middle_area] <- NA
+  
+  # Combine the Z1s and Z2s. Note: `length(bZ1) == 2*length(Z1)`
+  # Setting up vectors to calculate BA between Z1 and the next 
+  #   known depth using bottom interval & between Z2 and known 
+  #   depth just above Z2.
+  bZ1 <- c(Z1, hypso$depths[bottom_interval])
+  bZ2 <- c(hypso$depths[top_interval+1], Z2)
+  bA1 <- c(A1, hypso$areas[bottom_interval])
+  bA2 <- c(hypso$areas[top_interval+1], A2)
+  
+  # Replace bottom interval with Z2 & A2 if no middle area to
+  # use Z1 & Z2 together.
+  bZ2[no_middle_area] <- Z2[no_middle_area]
+  bA2[no_middle_area] <- A2[no_middle_area]
+  
+  # Calculate all of these benthic areas. Because of how the 
+  # vectors were set up above, `length(ba) == 2*length(Z1)`
+  ba <- calc_benthic_area(bZ1, bZ2, bA1, bA2)
+  
+  stopifnot(length(ba) == 2*length(Z1))
+  
+  # `ba` has 2 BA values for each Z1 and we can assume that the
+  #   second values are just appended to the end of the first vector. 
+  # We need to sum each combination of BA values, so creating a column
+  #   for each combination and then summing.
+  colSums(matrix(ba, nrow = 2, ncol = length(Z1), byrow=TRUE), na.rm = TRUE) +
+    middle_benthic_areas # total benthic area
+  
 }
+
+
