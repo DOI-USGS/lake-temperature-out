@@ -4,11 +4,15 @@ packages:
   - dplyr
   - tidyr
   - scipiper
+  - readr
+  - feather
+  - purrr
 
 sources:
   - 2_process/src/process_helpers.R
   - 2_process/src/create_group_task_plan.R
   - 2_process/src/create_lake_task_plan.R
+  - 2_process/src/split_observed_data.R
 
 targets:
   2_process:
@@ -70,8 +74,10 @@ targets:
       - 1_fetch/out/irradiance_downloaded.yml
       - 1_fetch/out/pb0_temp_pred_downloaded.yml
       - 1_fetch/out/clarity_downloaded.yml
+  
   ### Calculate TOHA for each lake ###
   
+  ## For PB0 ##
   process_lake_tasks:
     command: create_lake_tasks(task_df_fn = '2_process/out/2_process_grp_tasks_completed.yml', 
       log_folder = I("2_process/log"))
@@ -90,7 +96,7 @@ targets:
       - morphometry
       - 2_process/out/2_process_grp_tasks_completed.yml
 
-   ## now PGDL
+  ## For PGDL ##
   pgdl_lake_tasks:
     command: create_lake_tasks(task_df_fn = '2_process/out/2_pgdl_grp_tasks_completed.yml', 
       log_folder = I("2_process/log"))
@@ -102,11 +108,20 @@ targets:
       remake_file = I('2_process.yml'),
       final_targets = I('2_process/out/2_pgdl_lake_tasks.ind'))
   
-        #'2_process/tmp/pgdl_toha_nhdhr_120018569.csv', FAILED!!!Error in seq.int(0, to0 - from, by) : 'to' must be a finite number
-#In addition: There were 50 or more warnings (use warnings() to see the first 50)
+  #'2_process/tmp/pgdl_toha_nhdhr_120018569.csv', FAILED!!!Error in seq.int(0, to0 - from, by) : 'to' must be a finite number
+  #In addition: There were 50 or more warnings (use warnings() to see the first 50)
   2_process/out/2_pgdl_lake_tasks.ind:
     command: scmake(
       target_names = I('2_pgdl_lake_tasks.ind_promise'),
       remake_file = '2_pgdl_lake_tasks.yml')
     depends:
       - morphometry
+      
+  ### Calculate TOHA for each lake using observed temperature data ###
+  
+  ## Split observed data into one file per lake ##
+  2_process/out/observed_temperatures_split.yml:
+    command: split_observed_data(
+      target_name = target_name,
+      obs_zipfile = "1_fetch/out/temperature_observations.zip",
+      split_file_prefix = "split_obs_data")
