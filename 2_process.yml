@@ -12,13 +12,15 @@ sources:
   - 2_process/src/process_helpers.R
   - 2_process/src/create_group_task_plan.R
   - 2_process/src/create_lake_task_plan.R
-  - 2_process/src/split_observed_data.R
+  - 2_process/src/observed_data_helpers_prepare.R
+  - 2_process/src/create_obs_lake_task_plan.R
 
 targets:
   2_process:
     depends:
       - 2_process/out/2_process_lake_tasks.ind
       - 2_process/out/2_pgdl_lake_tasks.ind
+      - 2_process/out/combined_obs_toha.csv
   
   sb_group_info:
     command: read_csv("1_fetch/out/lake_metadata.csv")
@@ -121,7 +123,32 @@ targets:
   
   ## Split observed data into one file per lake ##
   2_process/out/observed_temperatures_split.yml:
-    command: split_observed_data(
+    command: unzip_and_split_observed_data(
       target_name = target_name,
       obs_zipfile = "1_fetch/out/temperature_observations.zip",
-      split_file_prefix = "split_obs_data")
+      split_file_prefix = I("split_obs_data"))
+  
+  ## Prepare irradiance and clarity data for merging with observed temp by unzipping individual lake files ##
+  2_process/out/irradiance_unzipped.yml:
+    command: unzip_data(
+      target_name = target_name,
+      data_file = "1_fetch/out/irradiance_downloaded.yml",
+      out_dir = I("2_process/tmp"))
+  2_process/out/clarity_unzipped.yml:
+    command: unzip_data(
+      target_name = target_name,
+      data_file = "1_fetch/out/clarity_downloaded.yml",
+      out_dir = I("2_process/tmp"))
+  
+  2_process/out/combined_obs_toha.csv:
+    command: do_obs_lake_tasks(
+      target_name = target_name,
+      task_df_fn = '2_process/out/observed_temperatures_split.yml', 
+      irr_df_fn = '2_process/out/irradiance_unzipped.yml',
+      k0_df_fn = '2_process/out/clarity_unzipped.yml',
+      "2_process/src/observed_data_helpers_munge.R", 
+      "2_process/src/calculate_toha.R",
+      "2_process/src/create_obs_lake_task_plan.R")
+    depends:
+      - morphometry
+    

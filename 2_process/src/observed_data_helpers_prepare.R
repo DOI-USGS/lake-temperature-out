@@ -1,4 +1,4 @@
-split_observed_data <- function(target_name, obs_zipfile, split_file_prefix) {
+unzip_and_split_observed_data <- function(target_name, obs_zipfile, split_file_prefix) {
   
   # Unzip the file
   unzipped_obs_file <- unzip(zipfile = obs_zipfile, overwrite = TRUE, exdir = tempdir())
@@ -14,4 +14,16 @@ split_observed_data <- function(target_name, obs_zipfile, split_file_prefix) {
     purrr::reduce(c)
   
   scipiper::sc_indicate(target_name, data_file = local_filenames)
+}
+
+unzip_data <- function(target_name, data_file, out_dir) {
+  # Sometimes (as is the case with irradiance and clarity), the incoming
+  # file has multiple zip files that need to be unpacked and saved
+  unzipped_data_files <- lapply(
+    names(yaml::yaml.load_file(data_file))[1:2], 
+    unzip, 
+    overwrite = TRUE, exdir = out_dir) %>% 
+    unlist()
+  
+  scipiper::sc_indicate(target_name, data_file = unzipped_data_files)
 }
