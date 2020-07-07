@@ -14,8 +14,11 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, ...)
     extract(filepath, into = 'site_id', regex = "gam_(.*)_clarity.csv", remove = FALSE) %>% 
     select(site_id, clarity_filepath = filepath)
   
-  # Merge clarity and irr file names to use
-  tasks <- tasks %>% left_join(irr_files, by = 'site_id') %>% left_join(clarity_files, by = 'site_id')
+  # Merge clarity and irr file names to use & remove sites that don't have both irr and kd
+  tasks <- tasks %>% 
+    left_join(irr_files, by = 'site_id') %>% 
+    left_join(clarity_files, by = 'site_id') %>%
+    filter(!is.na(irr_filepath) & !is.na(clarity_filepath))
   
   # ---- create task steps ---- #
   
