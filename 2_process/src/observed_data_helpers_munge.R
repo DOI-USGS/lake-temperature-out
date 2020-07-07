@@ -12,7 +12,14 @@ filter_observed_data <- function(obs_fn) {
     pull(date)
   
   observed_dat %>% 
-    filter(date %in% dates_to_keep)
+    filter(date %in% dates_to_keep) %>% 
+    # Discovered during `reformat_observed_data` that some sites did
+    # not have unique combinations of date & depth which causes the
+    # pivoted data to have lists instead of single values. To fix, I
+    # am averaging the temperature values if there are more than 1.
+    group_by(site_id, date, depth) %>% 
+    summarize(temp = mean(temp)) %>% 
+    ungroup()
   
 }
 
