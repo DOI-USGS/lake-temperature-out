@@ -34,7 +34,8 @@ calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
   }) %>% 
     purrr::reduce(bind_rows) %>% 
     mutate(date = site_data$DateTime) %>% # Add the date column
-    select(date, everything()) %>% # Move it so it's first
+    mutate(site_id = site_data$site_id) %>% # Add the site column
+    select(site_id, date, everything()) %>% # Move site and date columns first
     readr::write_csv(path = target_name)
 }
 
