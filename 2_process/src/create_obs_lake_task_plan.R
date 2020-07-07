@@ -51,7 +51,7 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, ...)
       sprintf("formatted_obs_data_%s", task_name)
     },
     command = function(steps, ...){
-      sprintf("reformat_observed_data(%s)", steps[["apply_data_criteria"]]$target_name)
+      sprintf("reformat_observed_data(`%s`)", steps[["apply_data_criteria"]]$target_name)
     } 
   )
   
@@ -65,7 +65,7 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, ...)
       clarity_filepath <- dplyr::filter(tasks, site_id == task_name) %>% pull(clarity_filepath)
       psprintf("join_observed_data(",
                "target_name = target_name,",
-               "obs_data = %s," = steps[["reformat_obs_data"]]$target_name, 
+               "obs_data = `%s`," = steps[["reformat_obs_data"]]$target_name, 
                "irr_data_fn = '%s'," = irr_filepath, 
                "k0_data_fn = '%s')" = clarity_filepath)
     } 
