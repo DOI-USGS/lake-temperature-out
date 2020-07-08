@@ -41,10 +41,9 @@ calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
         wtr_thresh = c(11,25),
         cum_ba = cum_benthic_area)
     }) %>% 
-      mutate(date = site_data$DateTime) %>% # Add the date column
-      mutate(site_id = site_data$site_id) %>% # Add the site column
-      select(site_id, date, everything()) %>% # Move site and date columns first
       bind_rows() %>% 
+      mutate(date = site_data$DateTime, .before = 1) %>% # Add the date column first (need dplyr > 1.0.0)
+      mutate(site_id = site_data$site_id, .before = 1) %>% # Add the site column first (need dplyr > 1.0.0)
       readr::write_csv(path = target_name)
   }
   
