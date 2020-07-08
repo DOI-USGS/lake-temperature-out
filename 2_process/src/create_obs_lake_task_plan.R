@@ -123,6 +123,6 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, ...)
 combine_obs_toha <- function(target_name, ...) {
   # Read feather files and combine into single CSV
   purrr::map(list(...), read_csv, col_types = cols()) %>% 
-    purrr::reduce(bind_rows) %>% 
+    bind_rows() %>% 
     write_csv(target_name)
 }
