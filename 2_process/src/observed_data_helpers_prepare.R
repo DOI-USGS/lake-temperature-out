@@ -11,7 +11,7 @@ unzip_and_split_observed_data <- function(target_name, obs_zipfile, split_file_p
       write_feather(data, split_fn)
       return(split_fn)
     }) %>% 
-    purrr::reduce(c)
+    unlist()
   
   scipiper::sc_indicate(target_name, data_file = local_filenames)
 }
