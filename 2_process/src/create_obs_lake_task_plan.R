@@ -37,40 +37,20 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, ...)
     } 
   )
   
-  apply_data_criteria <- scipiper::create_task_step(
-    step_name = 'apply_data_criteria',
+  munge_data <- scipiper::create_task_step(
+    step_name = 'munge_data',
     target_name = function(task_name, ...){
-      sprintf("filtered_obs_data_%s", task_name)
-    },
-    command = function(task_name, ...){
-      task_filepath <- dplyr::filter(tasks, site_id == task_name) %>% pull(task_filepath)
-      sprintf("filter_observed_data('%s')", task_filepath)
-    } 
-  )
-  
-  reformat_obs_data <- scipiper::create_task_step(
-    step_name = 'reformat_obs_data',
-    target_name = function(task_name, ...){
-      sprintf("formatted_obs_data_%s", task_name)
-    },
-    command = function(steps, ...){
-      sprintf("reformat_observed_data(`%s`)", steps[["apply_data_criteria"]]$target_name)
-    } 
-  )
-  
-  join_temp_kd_i0 <- scipiper::create_task_step(
-    step_name = 'join_temp_kd_i0',
-    target_name = function(task_name, step_name, ...){
       sprintf("2_process/tmp/munged_obs_data_%s.feather", task_name)
     },
-    command = function(task_name, steps, ...){
+    command = function(task_name, ...){
+      obs_filepath <- dplyr::filter(tasks, site_id == task_name) %>% pull(task_filepath)
       irr_filepath <- dplyr::filter(tasks, site_id == task_name) %>% pull(irr_filepath)
       clarity_filepath <- dplyr::filter(tasks, site_id == task_name) %>% pull(clarity_filepath)
-      psprintf("join_observed_data(",
+      psprintf("munge_observed_data(",
                "target_name = target_name,",
-               "obs_data = `%s`," = steps[["reformat_obs_data"]]$target_name, 
+               "obs_data_fn = '%s'," = obs_filepath, 
                "irr_data_fn = '%s'," = irr_filepath, 
-               "k0_data_fn = '%s')" = clarity_filepath)
+               "kd_data_fn = '%s')" = clarity_filepath)
     } 
   )
   
@@ -82,7 +62,7 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, ...)
     command = function(task_name, steps, ...){
       psprintf("calculate_toha_per_lake(", 
                "target_name = target_name,",
-               "site_data_fn = '%s'," = steps[["join_temp_kd_i0"]]$target_name,
+               "site_data_fn = '%s'," = steps[["munge_data"]]$target_name,
                "morphometry = `%s_morphometry`)" = task_name
       )
     } 
@@ -93,8 +73,7 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, ...)
   task_plan <- create_task_plan(
     task_names = tasks$site_id,
     task_steps = list(
-      split_morphometry, apply_data_criteria, reformat_obs_data,
-      join_temp_kd_i0, calculate_obs_toha),
+      split_morphometry, munge_data, calculate_obs_toha),
     final_steps = 'calculate_obs_toha',
     add_complete = FALSE)
   
