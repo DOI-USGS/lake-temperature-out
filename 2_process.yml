@@ -126,7 +126,7 @@ targets:
     command: unzip_and_split_observed_data(
       target_name = target_name,
       obs_zipfile = "1_fetch/out/temperature_observations.zip",
-      split_file_prefix = I("split_obs_data"))
+      split_file_prefix = I("2_process/tmp/split_obs_data"))
   
   ## Prepare irradiance and clarity data for merging with observed temp by unzipping individual lake files ##
   2_process/out/irradiance_unzipped.yml:

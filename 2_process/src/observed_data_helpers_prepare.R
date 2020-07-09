@@ -7,7 +7,7 @@ unzip_and_split_observed_data <- function(target_name, obs_zipfile, split_file_p
   local_filenames <- readr::read_csv(unzipped_obs_file, col_types = 'cDddc') %>% 
     split(.$site_id) %>% 
     purrr::map(function(data) {
-      split_fn <- sprintf("2_process/tmp/%s_%s.feather", split_file_prefix, unique(data$site_id))
+      split_fn <- sprintf("%s_%s.feather", split_file_prefix, unique(data$site_id))
       write_feather(data, split_fn)
       return(split_fn)
     }) %>% 
