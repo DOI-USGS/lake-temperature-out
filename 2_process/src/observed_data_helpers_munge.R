@@ -19,6 +19,7 @@ filter_observed_data <- function(obs_data) {
   # Filter so that there is more than 1 temperature value 
   # per date (more than one depth)
   dates_to_keep <- obs_data %>% 
+    filter(!is.na(temp)) %>% 
     group_by(date) %>%
     summarize(count = n()) %>% 
     filter(count > 1) %>% 
