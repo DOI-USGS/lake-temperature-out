@@ -4,7 +4,7 @@ unzip_and_split_observed_data <- function(target_name, obs_zipfile, split_file_p
   unzipped_obs_file <- unzip(zipfile = obs_zipfile, overwrite = TRUE, exdir = tempdir())
   
   # Read in the csv & split into a feather file per lake
-  local_filenames <- readr::read_csv(unzipped_obs_file, col_types = 'cDddc') %>% 
+  local_filenames <- readr::read_csv(unzipped_obs_file, col_types = cols()) %>% 
     split(.$site_id) %>% 
     purrr::map(function(data) {
       split_fn <- sprintf("%s_%s.feather", split_file_prefix, unique(data$site_id))

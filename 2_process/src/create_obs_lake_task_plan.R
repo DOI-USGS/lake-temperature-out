@@ -1,9 +1,9 @@
 
-do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, ...){
+do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, obs_model, ...){
   
   tasks <- tibble(task_filepath = names(yaml::yaml.load_file(task_df_fn))) %>% 
     mutate(filename = basename(task_filepath)) %>% 
-    extract(filename, 'site_id', "split_obs_data_(.*).feather", remove = FALSE) %>% 
+    extract(filename, 'site_id', sprintf("split_%s_data_(.*).feather", obs_model), remove = FALSE) %>% 
     select(task_filepath, site_id) %>% 
     filter(nchar(task_filepath) != 0) 
   
@@ -40,7 +40,7 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, ...)
   munge_data <- scipiper::create_task_step(
     step_name = 'munge_data',
     target_name = function(task_name, ...){
-      sprintf("2_process/tmp/munged_obs_data_%s.feather", task_name)
+      sprintf("2_process/tmp/munged_%s_data_%s.feather", obs_model, task_name)
     },
     command = function(task_name, ...){
       obs_filepath <- dplyr::filter(tasks, site_id == task_name) %>% pull(task_filepath)
@@ -54,10 +54,10 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, ...)
     } 
   )
   
-  calculate_obs_toha <- scipiper::create_task_step(
-    step_name = 'calculate_obs_toha',
+  calculate_toha <- scipiper::create_task_step(
+    step_name = sprintf('calculate_%s_toha', obs_model),
     target_name = function(task_name, ...){
-      sprintf("2_process/tmp/obs_toha_%s.csv", task_name)
+      sprintf("2_process/tmp/%s_toha_%s.csv", obs_model, task_name)
     },
     command = function(task_name, steps, ...){
       psprintf("calculate_toha_per_lake(", 
@@ -73,15 +73,15 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, ...)
   task_plan <- create_task_plan(
     task_names = tasks$site_id,
     task_steps = list(
-      split_morphometry, munge_data, calculate_obs_toha),
-    final_steps = 'calculate_obs_toha',
+      split_morphometry, munge_data, calculate_toha),
+    final_steps = sprintf('calculate_%s_toha', obs_model),
     add_complete = FALSE)
   
   # ---- combine into a task makefile ---- #
   
   create_task_makefile(
     task_plan = task_plan,
-    makefile = '2_obs_lake_tasks.yml',
+    makefile = sprintf('2_%s_lake_tasks.yml', obs_model),
     include = 'remake.yml',
     sources = c(...),
     packages = c("purrr", "dplyr", "mda.lakes", "feather", "rLakeAnalyzer", "readr"),
@@ -94,7 +94,7 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, ...)
   
   loop_tasks(
     task_plan = task_plan,
-    task_makefile = '2_obs_lake_tasks.yml',
+    task_makefile = sprintf('2_%s_lake_tasks.yml', obs_model),
     num_tries = 1)
   
 }

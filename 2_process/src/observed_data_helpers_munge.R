@@ -10,6 +10,11 @@ munge_observed_data <- function(target_name, obs_data_fn, irr_data_fn, kd_data_f
 }
 
 filter_observed_data <- function(obs_data) {
+
+  # The modeled data's temperature values were in a column called
+  # `pred` and were character, but the observed data had a column
+  # called `temp`
+  if(!"temp" %in% names(obs_data)) obs_data$temp <- as.numeric(obs_data$pred)
   
   # Filter so that there is more than 1 temperature value 
   # per date (more than one depth)
