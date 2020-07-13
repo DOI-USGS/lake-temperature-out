@@ -2,11 +2,13 @@ target_default: 3_summarize
 
 packages:
   - dplyr
+  - readr
 
 sources:
   - 3_summarize/src/combine_files_to_zip.R
   - 3_summarize/src/calculate_total_benthic_area.R
   - 2_process/src/calculate_toha.R # Has the benthic area fxn
+  - 3_summarize/src/calculate_rmse.R
 
 targets:
   3_summarize:
@@ -14,6 +16,8 @@ targets:
       - 3_summarize/out/3_summarize_zip_pb0_toha.yml
       - 3_summarize/out/3_summarize_zip_pgdl_toha.yml
       - 3_summarize/out/total_benthic_areas.csv
+      - 3_summarize/out/rmse_pb0.csv
+      - 3_summarize/out/rmse_pgdl.csv
 
   ### Zip up lake toha files by lake group ###
   
@@ -35,9 +39,23 @@ targets:
       dest_dir = I('3_summarize/tmp'),
       zip_out_prefix = I('pgdl_toha'))
 
-  ## Calculate total benthic area to use with TOHA areas --> TOHA as % Benthic Area ##
+  ### Calculate total benthic area to use with TOHA areas --> TOHA as % Benthic Area ###
   
   3_summarize/out/total_benthic_areas.csv:
     command: calculate_total_benthic_area(
       target_name = target_name,
       morphometry = morphometry)
+  
+  ### Error estimation ###
+  
+  3_summarize/out/rmse_pb0.csv:
+    command: calculate_rmse(
+      target_name = target_name,
+      actual_fn = "2_process/out/combined_obs_toha.csv",
+      predicted_fn = "2_process/out/combined_pb0_matched2obs_toha.csv")
+  
+  3_summarize/out/rmse_pgdl.csv:
+    command: calculate_rmse(
+      target_name = target_name,
+      actual_fn = "2_process/out/combined_obs_toha.csv",
+      predicted_fn = "2_process/out/combined_pgdl_matched2obs_toha.csv")
