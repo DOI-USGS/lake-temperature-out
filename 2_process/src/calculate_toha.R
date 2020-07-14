@@ -6,36 +6,47 @@ calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
   site_data <- feather::read_feather(site_data_fn)
   wtr_cols <- grep("temp_", names(site_data))
   
-  hypsos <- data.frame(H = morphometry$H, A = morphometry$A) %>% 
-    mutate(depths = max(H) - H, areas = A) %>% 
-    arrange(depths) %>% 
-    select(depths, areas)
+  # When adding obs data, some sites don't make it past the filtering criteria
+  # so we need to skip them or toha calculations error weirdly
+  if(nrow(site_data) == 0) {
+    # Can't use `site_data` since there aren't any observations
+    site_id <- sub(pattern = ".*(nhdhr_.*)\\..*$", replacement = "\\1", target_name)
+    warning(sprintf("Insufficient data to calculate TOHA for %s", site_id))
+    data.frame() %>% readr::write_csv(path = target_name)
+  } else {
+    
+    hypsos <- data.frame(H = morphometry$H, A = morphometry$A) %>% 
+      mutate(depths = max(H) - H, areas = A) %>% 
+      arrange(depths) %>% 
+      select(depths, areas)
+    
+    # precalculate benthic areas for each known slice, rather than doing
+    # this for each time timestep
+    cum_benthic_area <- cumsum(calc_benthic_area(
+      hypsos$depths[-length(hypsos$depths)],
+      hypsos$depths[-1],
+      hypsos$areas[-length(hypsos$areas)],
+      hypsos$areas[-1]))
+    
+    toha_out <- purrr::map(1:nrow(site_data), function(r) {
+      opti_thermal_habitat_subdaily(
+        current_date = site_data$DateTime[r],
+        wtr = site_data[r, wtr_cols], 
+        io = site_data$io[r], 
+        kd = site_data$kd[r], 
+        lat = morphometry$latitude, 
+        lon = morphometry$longitude, 
+        hypsos = hypsos, 
+        irr_thresh = c(0.0762, 0.6476), 
+        wtr_thresh = c(11,25),
+        cum_ba = cum_benthic_area)
+    }) %>% 
+      bind_rows() %>% 
+      mutate(date = site_data$DateTime, .before = 1) %>% # Add the date column first (need dplyr > 1.0.0)
+      mutate(site_id = site_data$site_id, .before = 1) %>% # Add the site column first (need dplyr > 1.0.0)
+      readr::write_csv(path = target_name)
+  }
   
-  # precalculate benthic areas for each known slice, rather than doing
-  # this for each time timestep
-  cum_benthic_area <- cumsum(calc_benthic_area(
-    hypsos$depths[-length(hypsos$depths)],
-    hypsos$depths[-1],
-    hypsos$areas[-length(hypsos$areas)],
-    hypsos$areas[-1]))
-  
-  toha_out <- purrr::map(1:nrow(site_data), function(r) {
-    opti_thermal_habitat_subdaily(
-      current_date = site_data$DateTime[r],
-      wtr = site_data[r, wtr_cols], 
-      io = site_data$io[r], 
-      kd = site_data$kd[r], 
-      lat = morphometry$latitude, 
-      lon = morphometry$longitude, 
-      hypsos = hypsos, 
-      irr_thresh = c(0.0762, 0.6476), 
-      wtr_thresh = c(11,25),
-      cum_ba = cum_benthic_area)
-  }) %>% 
-    purrr::reduce(bind_rows) %>% 
-    mutate(date = site_data$DateTime) %>% # Add the date column
-    select(date, everything()) %>% # Move it so it's first
-    readr::write_csv(path = target_name)
 }
 
 #' @title Calculate OHA, THA, and TOHA within table.

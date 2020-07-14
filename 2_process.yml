@@ -4,17 +4,23 @@ packages:
   - dplyr
   - tidyr
   - scipiper
+  - readr
+  - feather
+  - purrr
 
 sources:
   - 2_process/src/process_helpers.R
   - 2_process/src/create_group_task_plan.R
   - 2_process/src/create_lake_task_plan.R
+  - 2_process/src/observed_data_helpers_prepare.R
+  - 2_process/src/create_obs_lake_task_plan.R
 
 targets:
   2_process:
     depends:
       - 2_process/out/2_process_lake_tasks.ind
       - 2_process/out/2_pgdl_lake_tasks.ind
+      - 2_process/out/combined_obs_toha.csv
   
   sb_group_info:
     command: read_csv("1_fetch/out/lake_metadata.csv")
@@ -70,8 +76,10 @@ targets:
       - 1_fetch/out/irradiance_downloaded.yml
       - 1_fetch/out/pb0_temp_pred_downloaded.yml
       - 1_fetch/out/clarity_downloaded.yml
+  
   ### Calculate TOHA for each lake ###
   
+  ## For PB0 ##
   process_lake_tasks:
     command: create_lake_tasks(task_df_fn = '2_process/out/2_process_grp_tasks_completed.yml', 
       log_folder = I("2_process/log"))
@@ -90,7 +98,7 @@ targets:
       - morphometry
       - 2_process/out/2_process_grp_tasks_completed.yml
 
-   ## now PGDL
+  ## For PGDL ##
   pgdl_lake_tasks:
     command: create_lake_tasks(task_df_fn = '2_process/out/2_pgdl_grp_tasks_completed.yml', 
       log_folder = I("2_process/log"))
@@ -102,11 +110,89 @@ targets:
       remake_file = I('2_process.yml'),
       final_targets = I('2_process/out/2_pgdl_lake_tasks.ind'))
   
-        #'2_process/tmp/pgdl_toha_nhdhr_120018569.csv', FAILED!!!Error in seq.int(0, to0 - from, by) : 'to' must be a finite number
-#In addition: There were 50 or more warnings (use warnings() to see the first 50)
+  #'2_process/tmp/pgdl_toha_nhdhr_120018569.csv', FAILED!!!Error in seq.int(0, to0 - from, by) : 'to' must be a finite number
+  #In addition: There were 50 or more warnings (use warnings() to see the first 50)
   2_process/out/2_pgdl_lake_tasks.ind:
     command: scmake(
       target_names = I('2_pgdl_lake_tasks.ind_promise'),
       remake_file = '2_pgdl_lake_tasks.yml')
+    depends:
+      - morphometry
+      
+  ### Calculate TOHA for each lake using observed temperature data ###
+  
+  ## Prepare irradiance and clarity data for merging with observed temp by unzipping individual lake files ##
+  2_process/out/irradiance_unzipped.yml:
+    command: unzip_data(
+      target_name = target_name,
+      data_file = "1_fetch/out/irradiance_downloaded.yml",
+      out_dir = I("2_process/tmp"))
+  2_process/out/clarity_unzipped.yml:
+    command: unzip_data(
+      target_name = target_name,
+      data_file = "1_fetch/out/clarity_downloaded.yml",
+      out_dir = I("2_process/tmp"))
+  
+  ## Split observed data into one file per lake ##
+  2_process/out/observed_temperatures_split.yml:
+    command: unzip_and_split_observed_data(
+      target_name = target_name,
+      obs_zipfile = "1_fetch/out/temperature_observations.zip",
+      split_file_prefix = I("2_process/tmp/split_obs_data"))
+  
+  2_process/out/combined_obs_toha.csv:
+    command: do_obs_lake_tasks(
+      target_name = target_name,
+      task_df_fn = '2_process/out/observed_temperatures_split.yml', 
+      irr_df_fn = '2_process/out/irradiance_unzipped.yml',
+      k0_df_fn = '2_process/out/clarity_unzipped.yml',
+      obs_model = I('obs'),
+      "2_process/src/observed_data_helpers_munge.R", 
+      "2_process/src/calculate_toha.R",
+      "2_process/src/create_obs_lake_task_plan.R")
+    depends:
+      - morphometry
+  
+  ### Now calculate TOHA for PB0 matched to observed ###
+  
+  ## Split data into one file per lake ##
+  2_process/out/pb0_matched2obs_split.yml:
+    command: unzip_and_split_observed_data(
+      target_name = target_name,
+      obs_zipfile = "1_fetch/out/pb0_matched_to_observations.zip",
+      split_file_prefix = I("2_process/tmp/split_pb0_matched2obs_data"))
+  
+  2_process/out/combined_pb0_matched2obs_toha.csv:
+    command: do_obs_lake_tasks(
+      target_name = target_name,
+      task_df_fn = '2_process/out/pb0_matched2obs_split.yml', 
+      irr_df_fn = '2_process/out/irradiance_unzipped.yml',
+      k0_df_fn = '2_process/out/clarity_unzipped.yml',
+      obs_model = I('pb0_matched2obs'),
+      "2_process/src/observed_data_helpers_munge.R", 
+      "2_process/src/calculate_toha.R",
+      "2_process/src/create_obs_lake_task_plan.R")
+    depends:
+      - morphometry
+  
+  ### Now calculate TOHA for PGDL matched to observed ###
+  
+  ## Split data into one file per lake ##
+  2_process/out/pgdl_matched2obs_split.yml:
+    command: unzip_and_split_observed_data(
+      target_name = target_name,
+      obs_zipfile = "1_fetch/out/pgdl_matched_to_observations.zip",
+      split_file_prefix = I("2_process/tmp/split_pgdl_matched2obs_data"))
+  
+  2_process/out/combined_pgdl_matched2obs_toha.csv:
+    command: do_obs_lake_tasks(
+      target_name = target_name,
+      task_df_fn = '2_process/out/pgdl_matched2obs_split.yml', 
+      irr_df_fn = '2_process/out/irradiance_unzipped.yml',
+      k0_df_fn = '2_process/out/clarity_unzipped.yml',
+      obs_model = I('pgdl_matched2obs'),
+      "2_process/src/observed_data_helpers_munge.R", 
+      "2_process/src/calculate_toha.R",
+      "2_process/src/create_obs_lake_task_plan.R")
     depends:
       - morphometry

@@ -16,6 +16,9 @@ targets:
       - 1_fetch/out/irradiance_downloaded.yml
       - 1_fetch/out/pb0_temp_pred_downloaded.yml
       - 1_fetch/out/clarity_downloaded.yml
+      - 1_fetch/out/temperature_observations.zip
+      - 1_fetch/out/pb0_matched_to_observations.zip
+      - 1_fetch/out/pgdl_matched_to_observations.zip
   
   sb_dl_date:
    command: c(I("2020-04-29"))
@@ -69,4 +72,31 @@ targets:
       sb_id = clarity_sbid, 
       keyword = I("clarity"), 
       dest_folder = I("1_fetch/tmp"),
+      dummy = sb_dl_date)
+  
+  ##-- Download files for error estimation --##
+  
+  # All observed temperature data is in one
+  # CSV file that is zipped up
+  1_fetch/out/temperature_observations.zip:
+    command: download_sb_single_file(
+      target_name = target_name,
+      sb_id = I("5e5d0b68e4b01d50924f2b32"), 
+      sb_filename = I("temperature_observations.zip"),
+      dummy = sb_dl_date)
+  
+  # PB0 temp data matched to obs depths and dates
+  1_fetch/out/pb0_matched_to_observations.zip:
+    command: download_sb_single_file(
+      target_name = target_name,
+      sb_id = I("5e774324e4b01d509270e29f"), 
+      sb_filename = I("pb0_matched_to_observations.zip"),
+      dummy = sb_dl_date)
+  
+  # PGDL temp data matched to obs depths and dates
+  1_fetch/out/pgdl_matched_to_observations.zip:
+    command: download_sb_single_file(
+      target_name = target_name,
+      sb_id = I("5e774324e4b01d509270e29f"), 
+      sb_filename = I("pgdl_matched_to_observations.zip"),
       dummy = sb_dl_date)
