@@ -42,7 +42,7 @@
 
 library(tidyverse)
 
-read_obs <- function(filename) {
+read_obs <- function(zipfile) {
   unzipped_obs_file <- unzip(zipfile = zipfile, overwrite = TRUE, exdir = tempdir())
   readr::read_csv(unzipped_obs_file, col_types = cols()) %>%
     mutate(model='obs') %>%
@@ -133,6 +133,43 @@ tha_anecdotes %>%
   # ggtitle('Thermal habitat examples (highly observed sites), Pred vs Obs')
 ggsave('3_summarize/out/eg_tha_predobs_hiobs.png', width=10, height=10)
 # ggsave('3_summarize/out/eg_tha_predobs.png', width=10, height=10)
+
+library(lubridate)
+anecdote_date <- tibble(site_id = 'nhdhr_120018114', date = ymd('2010-08-25'))
+tha_one_anecdote <- tha_anecdotes %>%
+  filter(site_id == 'nhdhr_120018114',
+         between(date, ymd('2008-01-01'), ymd('2010-12-31'))) %>%
+  pivot_longer(cols=c('obs','pb0','pgdl'), names_to='model', values_to='THA') %>%
+  mutate(THA = 100*THA/max(THA)) # assume max = 100%
+g <- tha_one_anecdote %>% 
+  ggplot(aes(x=date, y=THA, color=model)) +
+  scale_color_manual('', values=c(obs='gray', pb0='#1b9e77', pgdl='#7570b3'), 
+                     labels=c(obs='Observed', pb0='CPB', pgdl='PGDL')) +
+  geom_point() +
+  xlab(NULL) +
+  ylab('Thermal habitat area (%)') +
+  theme_minimal() +
+  theme(legend.position='bottom')
+g
+ggsave('3_summarize/out/tha_one_anecdote.png', width=5, height=3)
+g + geom_point(data=filter(tha_one_anecdote, date == anecdote_date$date), color='red', shape=21, size=3)
+ggsave('3_summarize/out/tha_one_anecdote_circled.png', width=5, height=3)
+  
+
+anecdote_date %>%
+  left_join(predobs, by=c('site_id', 'date')) %>%
+  ggplot(aes(color=model, shape=model)) +
+  # annotate('rect', xmin=5, xmax=11, ymin=-Inf, ymax=Inf, fill='#0000ff', alpha=0.1, color=NA) +
+  annotate('rect', xmin=11, xmax=25, ymin=-Inf, ymax=Inf, fill='#fc0000', alpha=0.1, color=NA) +
+  geom_point(aes(x=temp, y=depth)) + geom_line(aes(x=temp, y=depth), orientation = 'y') +
+  xlab('Temperature (C)') + ylab('Depth (m)') +
+  coord_cartesian(xlim=c(9,27)) +
+  scale_y_reverse() +
+  scale_shape_discrete('', labels=c(obs='Observed', pb0='CPB', pgdl='PGDL'), guide='none') +
+  scale_color_manual('', values=c(obs='gray', pb0='#1b9e77', pgdl='#7570b3'), 
+                     labels=c(obs='Observed', pb0='CPB', pgdl='PGDL'), guide='none') +
+  theme_minimal()
+ggsave('3_summarize/out/tha_one_anecdote_profile.png', width=4, height=3)
 
 ggplot(tha_anecdotes,
        aes(x=pb0, y=pgdl)) +

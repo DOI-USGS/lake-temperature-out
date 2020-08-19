@@ -7,6 +7,7 @@ sources:
   - 3_summarize/src/combine_files_to_zip.R
   - 3_summarize/src/calculate_total_benthic_area.R
   - 2_process/src/calculate_toha.R # Has the benthic area fxn
+  - 3_summarize/src/calculate_rmse.R
 
 targets:
   3_summarize:
@@ -41,3 +42,18 @@ targets:
     command: calculate_total_benthic_area(
       target_name = target_name,
       morphometry = morphometry)
+
+
+   ### Error estimation ###
+
+  # alison added I()s to decouple these from the pipeline during code dev
+  3_summarize/out/rmse_pb0.csv:
+    command: calculate_rmse(
+      target_name = target_name,
+      actual_fn = I("2_process/out/combined_obs_toha.csv"),
+      predicted_fn = I("2_process/out/combined_pb0_matched2obs_toha.csv"))
+  3_summarize/out/rmse_pgdl.csv:
+    command: calculate_rmse(
+      target_name = target_name,
+      actual_fn = I("2_process/out/combined_obs_toha.csv"),
+      predicted_fn = I("2_process/out/combined_pgdl_matched2obs_toha.csv"))
