@@ -1,3 +1,44 @@
+
+calculate_annual_metrics <- function(target_name, site_ids, file_pattern) {
+  
+  purrr::map(site_ids, function(id) {
+    
+    annual_metrics <- read_feather(sprintf(file_pattern, id)) %>% 
+      select(site_id, date = DateTime, starts_with("temp_")) %>% 
+      pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
+      mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
+      mutate(year = as.numeric(format(date, "%Y"))) %>% 
+      group_by(site_id, year) %>% 
+      summarize(
+        # winter_dur_0_4 = winter_dur_0_4(),
+        # coef_var_30_60 = coef_var_30_60(),
+        # coef_var_0_30 = coef_var_0_30(),
+        # stratification_onset_yday = stratification_onset_yday(),
+        # stratification_duration = stratification_duration(),
+        # sthermo_depth_mean = sthermo_depth_mean(),
+        peak_temp = peak_temp(date, wtr, depth),
+        gdd_wtr_0c = gdd_wtr_0c(date, wtr),
+        gdd_wtr_5c = gdd_wtr_5c(date, wtr),
+        gdd_wtr_10c = gdd_wtr_10c(date, wtr),
+        # bottom_temp_at_strat = bottom_temp_at_strat(),
+        # schmidt_daily_annual_sum = schmidt_daily_annual_sum(),
+        mean_surf_jas = mean_surf_jas(date, wtr, depth),
+        max_surf_jas = max_surf_jas(date, wtr, depth),
+        mean_bot_jas = mean_bot_jas(date, wtr, depth),
+        max_bot_jas = max_bot_jas(date, wtr, depth)
+        
+        # TODO: per month calcs 
+      )
+    
+    message(sprintf("Completed annual metrics for %s/%s", which(site_ids == id), length(site_ids)))
+    
+    return(annual_metrics)
+  }) %>% 
+    bind_rows() %>% 
+    readr::write_csv(target_name)
+  
+}
+
 # Collection of functions to calculate annual thermal metrics
 # All accept the same main data input, `date` and `wtr`.
 
@@ -18,7 +59,7 @@ winter_dur_0_4 <- function(date, wtr) {
 
 #' @description Coefficient of Variation of surface temperature from 30-60 days post ice off.
 coef_var_30_60 <- function(date, wtr) {
-  
+  # ice dates are in 4_inputs in sciencebase
 }
 
 #' @description Coefficient of Variation of surface temperature from 0-30 days post ice off.
@@ -97,7 +138,7 @@ mean_bot_jas <- function(date, wtr, depth) {
 }
 
 #' @description max of bottom temperature (0.1 m from bottom) from July, August, September
-max_bot_jas <- function(date, wtr) {
+max_bot_jas <- function(date, wtr, depth) {
   purrr::map(unique(date), function(date_i) {
     if(is_jas(date_i)) {
       wtr_bot <- find_wtr_at_lake_bottom(wtr[date == date_i], depth[date == date_i])
@@ -136,7 +177,7 @@ max_bot_mon <- function(date, wtr) {
 ## Helper functions for the above
 
 calc_gdd <- function(wtr, base = 0) {
-  cumsum(wtr[wtr > base])
+  sum(wtr[wtr > base])
 }
 
 # Identify if dates are in July, August, and September
