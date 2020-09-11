@@ -3,11 +3,13 @@ calculate_annual_metrics <- function(target_name, site_ids, file_pattern) {
   
   purrr::map(site_ids, function(id) {
     
-    annual_metrics <- read_feather(sprintf(file_pattern, id)) %>% 
+    data_ready <- read_feather(sprintf(file_pattern, id)) %>% 
       select(site_id, date = DateTime, starts_with("temp_")) %>% 
       pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
       mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
-      mutate(year = as.numeric(format(date, "%Y"))) %>% 
+      mutate(year = as.numeric(format(date, "%Y")))
+    
+    annual_metrics <- data_ready %>% 
       group_by(site_id, year) %>% 
       summarize(
         # winter_dur_0_4 = winter_dur_0_4(),
@@ -16,19 +18,30 @@ calculate_annual_metrics <- function(target_name, site_ids, file_pattern) {
         # stratification_onset_yday = stratification_onset_yday(),
         # stratification_duration = stratification_duration(),
         # sthermo_depth_mean = sthermo_depth_mean(),
+        
         peak_temp = peak_temp(date, wtr, depth),
         gdd_wtr_0c = gdd_wtr_0c(date, wtr),
         gdd_wtr_5c = gdd_wtr_5c(date, wtr),
         gdd_wtr_10c = gdd_wtr_10c(date, wtr),
+        
         # bottom_temp_at_strat = bottom_temp_at_strat(),
         # schmidt_daily_annual_sum = schmidt_daily_annual_sum(),
+        
         mean_surf_jas = mean_surf_jas(date, wtr, depth),
         max_surf_jas = max_surf_jas(date, wtr, depth),
         mean_bot_jas = mean_bot_jas(date, wtr, depth),
-        max_bot_jas = max_bot_jas(date, wtr, depth)
+        max_bot_jas = max_bot_jas(date, wtr, depth),
         
-        # TODO: per month calcs 
-      )
+        # Per month calcs return a data.frame and get "unpacked" below 
+        mean_surf_mon = mean_surf_mon(date, wtr, depth),
+        max_surf_mon = max_surf_mon(date, wtr, depth),
+        mean_bot_mon = mean_bot_mon(date, wtr, depth),
+        max_bot_mon = max_bot_mon(date, wtr, depth),
+        
+        .groups = "keep" # suppresses message about regrouping
+      ) %>% 
+      unpack(cols = c(mean_surf_mon, max_surf_mon, 
+                      mean_bot_mon, max_bot_mon))
     
     message(sprintf("Completed annual metrics for %s/%s", which(site_ids == id), length(site_ids)))
     
@@ -155,23 +168,71 @@ max_bot_jas <- function(date, wtr, depth) {
 # TODO: think strategically about how to implement for each month.
 
 #' @description mean of surface temperature for a month
-mean_surf_mon <- function(date, wtr) {
-  
+mean_surf_mon <- function(date, wtr, depth) {
+  data.frame(date, month = tolower(format(date, "%b")), depth = depth, wtr = wtr) %>% 
+    # Get just surface temps
+    filter(depth == 0) %>% 
+    
+    # Sort months in annual order
+    arrange(as.numeric(format(date, "%m"))) %>%
+    
+    # Find mean for each month
+    group_by(month) %>% 
+    summarize(mean_surf = mean(wtr, na.rm = TRUE), .groups = "keep") %>% 
+    pivot_wider(names_from = month, values_from = mean_surf, names_prefix = "mean_surf_")
 }
 
 #' @description max of surface temperature for each month
-max_surf_mon <- function(date, wtr) {
-  
+max_surf_mon <- function(date, wtr, depth) {
+  data.frame(date, month = tolower(format(date, "%b")), depth = depth, wtr = wtr) %>% 
+    # Get just surface temps
+    filter(depth == 0) %>% 
+    
+    # Sort months in annual order
+    arrange(as.numeric(format(date, "%m"))) %>%
+    
+    # Find max for each month
+    group_by(month) %>% 
+    summarize(max_surf = max(wtr, na.rm = TRUE), .groups = "keep") %>% 
+    pivot_wider(names_from = month, values_from = max_surf, names_prefix = "max_surf_") %>% 
+    ungroup()
 }
 
 #' @description mean of bottom temperature for each month
-mean_bot_mon <- function(date, wtr) {
-  
+mean_bot_mon <- function(date, wtr, depth) {
+  data.frame(date, month = tolower(format(date, "%b")), depth = depth, wtr = wtr) %>% 
+    
+    # Calculate water temp at the bottom
+    group_by(date) %>% 
+    mutate(wtr_bot = find_wtr_at_lake_bottom(wtr, depth)) %>% 
+    ungroup() %>% 
+    
+    # Sort months in annual order
+    arrange(as.numeric(format(date, "%m"))) %>% 
+    
+    # Then find the mean for each month
+    group_by(month) %>% 
+    summarize(mean_bot = mean(wtr_bot, na.rm = TRUE), .groups = "keep") %>% 
+    pivot_wider(names_from = month, values_from = mean_bot, names_prefix = "mean_bot_") %>% 
+    ungroup()
 }
 
 #' @description max of bottom temperature for each month
-max_bot_mon <- function(date, wtr) {
-  
+max_bot_mon <- function(date, wtr, depth) {
+  data.frame(date, month = tolower(format(date, "%b")), depth = depth, wtr = wtr) %>% 
+    # Calculate water temp at the bottom
+    group_by(date) %>% 
+    mutate(wtr_bot = find_wtr_at_lake_bottom(wtr, depth)) %>% 
+    ungroup() %>%  
+    
+    # Sort months in annual order
+    arrange(as.numeric(format(date, "%m"))) %>% 
+    
+    # Then find the mean for each month
+    group_by(month) %>% 
+    summarize(max_bot = max(wtr_bot, na.rm = TRUE), .groups = "keep") %>% 
+    pivot_wider(names_from = month, values_from = max_bot, names_prefix = "max_bot_") %>% 
+    ungroup()
 }
 
 ## Helper functions for the above
