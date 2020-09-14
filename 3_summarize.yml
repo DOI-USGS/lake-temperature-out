@@ -53,7 +53,10 @@ targets:
   
   site_files:
     command: get_filenames_from_ind("2_process/out/2_pgdl_grp_tasks_completed.yml")
+  ice_files:
+    command: get_filenames_from_ind("2_process/out/iceflags_unzipped.yml")
   3_summarize/out/annual_metrics_pgdl.csv:
     command: calculate_annual_metrics(
       target_name,
-      site_files = site_files)
+      site_files = site_files,
+      ice_files = ice_files)

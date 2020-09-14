@@ -1,5 +1,5 @@
 
-calculate_annual_metrics <- function(target_name, site_files) {
+calculate_annual_metrics <- function(target_name, site_files, ice_files) {
   
   purrr::map(site_files, function(fn) {
     
@@ -7,7 +7,9 @@ calculate_annual_metrics <- function(target_name, site_files) {
       select(site_id, date = DateTime, starts_with("temp_")) %>% 
       pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
       mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
-      mutate(year = as.numeric(format(date, "%Y")))
+      mutate(year = as.numeric(format(date, "%Y"))) %>% 
+      # Read and join ice flags for this site
+      left_join(read_csv(ice_files[grepl(unique(data_ready$site_id), ice_files)]), by = "date")
     
     annual_metrics <- data_ready %>% 
       group_by(site_id, year) %>% 
@@ -64,8 +66,6 @@ get_filenames_from_ind <- function(ind_file) {
 
 #' @param date a vector (or one column) with the dates of class `Date`
 #' @param wtr a vector (or one column) with water temperature values in deg C
-
-# Some also have the following parameters:
 #' @param depth vector (or column) with depth in meters
 
 #' @description # of days, beginning October 30 of the previous year and running 
