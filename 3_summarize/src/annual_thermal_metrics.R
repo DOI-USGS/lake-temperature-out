@@ -20,9 +20,9 @@ calculate_annual_metrics <- function(target_name, site_ids, file_pattern) {
         # sthermo_depth_mean = sthermo_depth_mean(),
         
         peak_temp = peak_temp(date, wtr, depth),
-        gdd_wtr_0c = gdd_wtr_0c(date, wtr),
-        gdd_wtr_5c = gdd_wtr_5c(date, wtr),
-        gdd_wtr_10c = gdd_wtr_10c(date, wtr),
+        gdd_wtr_0c = calc_gdd(wtr, 0),
+        gdd_wtr_5c = calc_gdd(wtr, 5),
+        gdd_wtr_10c = calc_gdd(wtr, 10),
         
         # bottom_temp_at_strat = bottom_temp_at_strat(),
         # schmidt_daily_annual_sum = schmidt_daily_annual_sum(),
@@ -98,21 +98,6 @@ sthermo_depth_mean <- function(date, wtr) {
 #' @description Maximum observed surface temperature
 peak_temp <- function(date, wtr, depth) {
   max(wtr[which(depth == 0)], na.rm = TRUE)
-}
-
-#' @description Cumulative sum of degrees > 0 for entire year
-gdd_wtr_0c <- function(date, wtr) {
-  calc_gdd(wtr, 0)
-}
-
-#' @description Cumulative sum of degrees > 5 for entire year
-gdd_wtr_5c <- function(date, wtr) {
-  calc_gdd(wtr, 5)
- }
-
-#' @description Cumulative sum of degrees > 10 for entire year
-gdd_wtr_10c <- function(date, wtr) {
-  calc_gdd(wtr, 10)
 }
 
 #' @description water temperature 0.1m from lake bottom on day of 
@@ -237,6 +222,7 @@ max_bot_mon <- function(date, wtr, depth) {
 
 ## Helper functions for the above
 
+#' @description Cumulative sum of degrees >base degrees for entire year
 calc_gdd <- function(wtr, base = 0) {
   sum(wtr[wtr > base])
 }
