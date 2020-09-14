@@ -27,16 +27,16 @@ calculate_annual_metrics <- function(target_name, site_ids, file_pattern) {
         # bottom_temp_at_strat = bottom_temp_at_strat(),
         # schmidt_daily_annual_sum = schmidt_daily_annual_sum(),
         
-        mean_surf_jas = calc_summarystat_surf_mon(date, wtr, depth, "mean", month_nums_to_grp = 7:9),
-        max_surf_jas = calc_summarystat_surf_mon(date, wtr, depth, "max", month_nums_to_grp = 7:9),
-        mean_bot_jas = calc_summarystat_bot_mon(date, wtr, depth, "mean", month_nums_to_grp = 7:9),
-        max_bot_jas = calc_summarystat_bot_mon(date, wtr, depth, "max", month_nums_to_grp = 7:9),
+        mean_surf_jas = calc_monthly_summary_stat(date, wtr, depth, "mean", 0, "surf", month_nums_to_grp = 7:9),
+        max_surf_jas = calc_monthly_summary_stat(date, wtr, depth, "max", 0, "surf", month_nums_to_grp = 7:9),
+        mean_bot_jas = calc_monthly_summary_stat(date, wtr, depth, "mean", calc_lake_bottom(depth), "bot", month_nums_to_grp = 7:9),
+        max_bot_jas = calc_monthly_summary_stat(date, wtr, depth, "max", calc_lake_bottom(depth), "bot", month_nums_to_grp = 7:9),
         
         # Per month calcs return a data.frame and get "unpacked" below 
-        mean_surf_mon = calc_summarystat_surf_mon(date, wtr, depth, "mean"),
-        max_surf_mon = calc_summarystat_surf_mon(date, wtr, depth, "max"),
-        mean_bot_mon = calc_summarystat_bot_mon(date, wtr, depth, "mean"),
-        max_bot_mon = calc_summarystat_bot_mon(date, wtr, depth, "max"),
+        mean_surf_mon = calc_monthly_summary_stat(date, wtr, depth, "mean", 0, "surf"),
+        max_surf_mon = calc_monthly_summary_stat(date, wtr, depth, "max", 0, "surf"),
+        mean_bot_mon = calc_monthly_summary_stat(date, wtr, depth, "mean", calc_lake_bottom(depth), "bot"),
+        max_bot_mon = calc_monthly_summary_stat(date, wtr, depth, "max", calc_lake_bottom(depth), "bot"),
         
         .groups = "keep" # suppresses message about regrouping
       ) %>% 
@@ -111,8 +111,8 @@ schmidt_daily_annual_sum <- function(date, wtr) {
   
 }
 
-#' @description mean, max, or min of surface temperature for a month
-calc_summarystat_surf_mon <- function(date, wtr, depth, stat_type, month_nums_to_grp = NULL) {
+#' @description mean, max, or min of a specific depth's temperature for a month or group of months
+calc_monthly_summary_stat <- function(date, wtr, depth, stat_type, depth_to_use, depth_prefix, month_nums_to_grp = NULL) {
   
   calc_summary_stat <- switch(
     stat_type,
@@ -122,51 +122,17 @@ calc_summarystat_surf_mon <- function(date, wtr, depth, stat_type, month_nums_to
     stop(sprintf("A `stat_type` of '%s' is not currently supported", stat_type))
   )
   
-  data.frame(date, month = tolower(format(date, "%b")), depth = depth, wtr = wtr) %>% 
-    # Get just surface temps
-    filter(depth == 0) %>% 
+  data.frame(date, depth = depth, wtr = wtr) %>% 
     
-    # Sort months in annual order
-    mutate(month_num = as.numeric(format(date, "%m"))) %>% 
-    arrange(month_num) %>%
-    
-    # Group months if case that is desired
-    { 
-      if(!is.null(month_nums_to_grp))  
-      # First, filter out any month that is not part of the group 
-      filter(., month_num %in% month_nums_to_grp) %>% 
-        # Then, make them all the same group by replacing "month"
-        # with a string that is the made up month abbreviations
-        mutate(month = paste(month.abb[sort(month_nums_to_grp)], collapse=""))  
-      else .
-    } %>% 
-    
-    # Find mean for each month
-    group_by(month) %>% 
-    summarize(stat_surf = calc_summary_stat(wtr, na.rm = TRUE), .groups = "keep") %>% 
-    pivot_wider(names_from = month, values_from = stat_surf, names_prefix = sprintf("%s_surf_", stat_type))
-}
-
-#' @description mean, max, or min of bottom temperature for a month
-calc_summarystat_bot_mon <- function(date, wtr, depth, stat_type, month_nums_to_grp = NULL) {
-  
-  calc_summary_stat <- switch(
-    stat_type,
-    "mean" = mean,
-    "min" = min,
-    "max" = max,
-    stop(sprintf("A `stat_type` of '%s' is not currently supported", stat_type))
-  )
-  
-  data.frame(date, month = tolower(format(date, "%b")), depth = depth, wtr = wtr) %>% 
-    
-    # Calculate water temp at the bottom
+    # Calculate water temp at the desired depth
+    # If `depth_to_use` exists in `depth`, this method still works
     group_by(date) %>% 
-    mutate(wtr_bot = find_wtr_at_lake_bottom(wtr, depth)) %>% 
+    summarize(wtr_at_depth = find_wtr_at_depth(wtr, depth, depth_to_find = depth_to_use), .groups = "keep") %>% 
     ungroup() %>% 
     
     # Sort months in annual order
-    mutate(month_num = as.numeric(format(date, "%m"))) %>% 
+    mutate(month = tolower(format(date, "%b")),
+           month_num = as.numeric(format(date, "%m"))) %>% 
     arrange(month_num) %>%
     
     # Group months if case that is desired
@@ -182,8 +148,8 @@ calc_summarystat_bot_mon <- function(date, wtr, depth, stat_type, month_nums_to_
     
     # Then find the mean for each month
     group_by(month) %>% 
-    summarize(stat_surf = calc_summary_stat(wtr_bot, na.rm = TRUE), .groups = "keep") %>% 
-    pivot_wider(names_from = month, values_from = stat_surf, names_prefix = sprintf("%s_bot_", stat_type)) %>% 
+    summarize(stat_surf = calc_summary_stat(wtr_at_depth, na.rm = TRUE), .groups = "keep") %>% 
+    pivot_wider(names_from = month, values_from = stat_surf, names_prefix = sprintf("%s_%s_", stat_type, depth_prefix)) %>% 
     ungroup()
 }
 
@@ -199,11 +165,14 @@ is_jas <- function(date) {
   as.numeric(format(date, "%m")) %in% c(7, 8, 9)
 }
 
+# Uses 0.1 m from the bottom as the "bottom"
+calc_lake_bottom <- function(depth) {
+  lake_actual_bottom <- tail(unique(sort(depth)), 1)
+  return(lake_actual_bottom - 0.1)
+}
+
 # Doesn't consider dates at all
 # Assumes linear interpolation for depth-wtr relationship
-# Uses 0.1 m from the bottom as the "bottom"
-find_wtr_at_lake_bottom <- function(wtr, depth) {
-  lake_actual_bottom <- tail(unique(sort(depth)), 1)
-  wtr_bot <- approx(depth, wtr, lake_actual_bottom - 0.1)$y
-  return(wtr_bot)
+find_wtr_at_depth <- function(wtr, depth, depth_to_find) {
+  approx(depth, wtr, depth_to_find)$y
 }
