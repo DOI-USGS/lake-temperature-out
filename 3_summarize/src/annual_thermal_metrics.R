@@ -160,11 +160,6 @@ calc_gdd <- function(wtr, base = 0) {
   sum(wtr[wtr > base])
 }
 
-# Identify if dates are in July, August, and September
-is_jas <- function(date) {
-  as.numeric(format(date, "%m")) %in% c(7, 8, 9)
-}
-
 # Uses 0.1 m from the bottom as the "bottom"
 calc_lake_bottom <- function(depth) {
   lake_actual_bottom <- tail(unique(sort(depth)), 1)
