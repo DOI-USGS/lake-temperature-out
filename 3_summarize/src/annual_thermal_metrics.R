@@ -9,12 +9,13 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
       mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
       mutate(year = as.numeric(format(date, "%Y"))) %>% 
       # Read and join ice flags for this site
-      left_join(read_csv(ice_files[grepl(unique(data_ready$site_id), ice_files)]), by = "date")
+      left_join(read_csv(ice_files[grepl(unique(data_ready$site_id), ice_files)]), by = "date") %>% 
+      arrange(date, depth) # Data was coming in correct, but just making sure
     
-    annual_metrics <- data_ready %>% 
+    annual_metrics <- data_ready %>%
       group_by(site_id, year) %>% 
       summarize(
-        # winter_dur_0_4 = winter_dur_0_4(),
+        winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
         # coef_var_30_60 = coef_var_30_60(),
         # coef_var_0_30 = coef_var_0_30(),
         # stratification_onset_yday = stratification_onset_yday(),
@@ -70,12 +71,31 @@ get_filenames_from_ind <- function(ind_file) {
 
 #' @description # of days, beginning October 30 of the previous year and running 
 #' through June of the given year, that surface water is <4 degrees C
-winter_dur_0_4 <- function(date, wtr) {
+winter_dur_0_4 <- function(this_yr_date, this_yr_wtr, this_yr_depth, prev_yr_data) {
   
+  if(nrow(prev_yr_data) == 0) {
+    # TODO: should this allow partial data? For example, if the dates started in 
+    #   May, it may return 0 for that year. May need to skip and return NA.
+    start_date <- min(this_yr_date)
+  } else {
+    start_date <- unique(sprintf("%s-10-30", format(prev_yr_data$date, "%Y")))
+  }
+  end_date <- unique(sprintf("%s-06-30", format(this_yr_date, "%Y")))
+  
+  data.frame(date = c(prev_yr_data$date, this_yr_date), 
+             wtr = c(prev_yr_data$wtr, this_yr_wtr),
+             depth = c(prev_yr_data$depth, this_yr_depth)) %>% 
+    filter(
+      date >= start_date & date <= end_date, # Oct 30 prev year to June 30 this year
+      depth == 0, # surface water
+      wtr < 4 # TODO: What about negatives? Should it be 0-4 or just less than 4?
+    ) %>% 
+    nrow()
+   
 }
 
 #' @description Coefficient of Variation of surface temperature from 30-60 days post ice off.
-coef_var_30_60 <- function(date, wtr) {
+coef_var_30_60 <- function(date, wtr, ice) {
   # ice dates are in 4_inputs in sciencebase
 }
 
@@ -158,6 +178,13 @@ calc_monthly_summary_stat <- function(date, wtr, depth, stat_type, depth_to_use,
 }
 
 ## Helper functions for the above
+
+get_last_years_data <- function(this_year, dat_all) {
+  dat_all %>% 
+    filter(year == this_year - 1)
+}
+
+
 
 #' @description Cumulative sum of degrees >base degrees for entire year
 calc_gdd <- function(wtr, base = 0) {
