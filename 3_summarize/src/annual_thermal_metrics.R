@@ -27,10 +27,10 @@ calculate_annual_metrics <- function(target_name, site_ids, file_pattern) {
         # bottom_temp_at_strat = bottom_temp_at_strat(),
         # schmidt_daily_annual_sum = schmidt_daily_annual_sum(),
         
-        mean_surf_jas = mean_surf_jas(date, wtr, depth),
-        max_surf_jas = max_surf_jas(date, wtr, depth),
-        mean_bot_jas = mean_bot_jas(date, wtr, depth),
-        max_bot_jas = max_bot_jas(date, wtr, depth),
+        mean_surf_jas = mean_surf_mon(date, wtr, depth, month_nums_to_grp = 7:9),
+        max_surf_jas = max_surf_mon(date, wtr, depth, month_nums_to_grp = 7:9),
+        mean_bot_jas = mean_bot_mon(date, wtr, depth, month_nums_to_grp = 7:9),
+        max_bot_jas = max_bot_mon(date, wtr, depth, month_nums_to_grp = 7:9),
         
         # Per month calcs return a data.frame and get "unpacked" below 
         mean_surf_mon = mean_surf_mon(date, wtr, depth),
@@ -40,8 +40,8 @@ calculate_annual_metrics <- function(target_name, site_ids, file_pattern) {
         
         .groups = "keep" # suppresses message about regrouping
       ) %>% 
-      unpack(cols = c(mean_surf_mon, max_surf_mon, 
-                      mean_bot_mon, max_bot_mon))
+      unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
+                      mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas))
     
     message(sprintf("Completed annual metrics for %s/%s", which(site_ids == id), length(site_ids)))
     
@@ -111,55 +111,27 @@ schmidt_daily_annual_sum <- function(date, wtr) {
   
 }
 
-#' @description mean of surface temperature from July, August, September
-mean_surf_jas <- function(date, wtr, depth) {
-  mean(wtr[which(is_jas(date) & depth == 0)], na.rm = TRUE)
-}
-
-#' @description max of surface temperature from July, August, September
-max_surf_jas <- function(date, wtr, depth) {
-  max(wtr[which(is_jas(date) & depth == 0)], na.rm = TRUE)
-}
-
-#' @description mean of bottom temperature (0.1 m from bottom) from July, August, September
-mean_bot_jas <- function(date, wtr, depth) {
-  purrr::map(unique(date), function(date_i) {
-    if(is_jas(date_i)) {
-      wtr_bot <- find_wtr_at_lake_bottom(wtr[date == date_i], depth[date == date_i])
-    } else {
-      wtr_bot <- NA
-    }
-    return(wtr_bot)
-  }) %>% 
-    purrr::reduce(c) %>% 
-    mean(na.rm = TRUE)
-}
-
-#' @description max of bottom temperature (0.1 m from bottom) from July, August, September
-max_bot_jas <- function(date, wtr, depth) {
-  purrr::map(unique(date), function(date_i) {
-    if(is_jas(date_i)) {
-      wtr_bot <- find_wtr_at_lake_bottom(wtr[date == date_i], depth[date == date_i])
-    } else {
-      wtr_bot <- NA
-    }
-    return(wtr_bot)
-  }) %>% 
-    purrr::reduce(c) %>% 
-    max(na.rm = TRUE)
-}
-
-## Need to do the following fxns for each month.
-# TODO: think strategically about how to implement for each month.
-
 #' @description mean of surface temperature for a month
-mean_surf_mon <- function(date, wtr, depth) {
+mean_surf_mon <- function(date, wtr, depth, month_nums_to_grp = NULL) {
+  
   data.frame(date, month = tolower(format(date, "%b")), depth = depth, wtr = wtr) %>% 
     # Get just surface temps
     filter(depth == 0) %>% 
     
     # Sort months in annual order
-    arrange(as.numeric(format(date, "%m"))) %>%
+    mutate(month_num = as.numeric(format(date, "%m"))) %>% 
+    arrange(month_num) %>%
+    
+    # Group months if case that is desired
+    { 
+      if(!is.null(month_nums_to_grp))  
+      # First, filter out any month that is not part of the group 
+      filter(., month_num %in% month_nums_to_grp) %>% 
+        # Then, make them all the same group by replacing "month"
+        # with a string that is the made up month abbreviations
+        mutate(month = paste(month.abb[sort(month_nums_to_grp)], collapse=""))  
+      else .
+    } %>% 
     
     # Find mean for each month
     group_by(month) %>% 
@@ -168,14 +140,27 @@ mean_surf_mon <- function(date, wtr, depth) {
 }
 
 #' @description max of surface temperature for each month
-max_surf_mon <- function(date, wtr, depth) {
+max_surf_mon <- function(date, wtr, depth, month_nums_to_grp = NULL) {
+  
   data.frame(date, month = tolower(format(date, "%b")), depth = depth, wtr = wtr) %>% 
     # Get just surface temps
     filter(depth == 0) %>% 
     
     # Sort months in annual order
-    arrange(as.numeric(format(date, "%m"))) %>%
+    mutate(month_num = as.numeric(format(date, "%m"))) %>% 
+    arrange(month_num) %>%
     
+    # Group months if case that is desired
+    { 
+      if(!is.null(month_nums_to_grp))  
+        # First, filter out any month that is not part of the group 
+        filter(., month_num %in% month_nums_to_grp) %>% 
+        # Then, make them all the same group by replacing "month"
+        # with a string that is the made up month abbreviations
+        mutate(month = paste(month.abb[sort(month_nums_to_grp)], collapse=""))  
+      else .
+    } %>% 
+   
     # Find max for each month
     group_by(month) %>% 
     summarize(max_surf = max(wtr, na.rm = TRUE), .groups = "keep") %>% 
@@ -184,7 +169,7 @@ max_surf_mon <- function(date, wtr, depth) {
 }
 
 #' @description mean of bottom temperature for each month
-mean_bot_mon <- function(date, wtr, depth) {
+mean_bot_mon <- function(date, wtr, depth, month_nums_to_grp = NULL) {
   data.frame(date, month = tolower(format(date, "%b")), depth = depth, wtr = wtr) %>% 
     
     # Calculate water temp at the bottom
@@ -193,7 +178,19 @@ mean_bot_mon <- function(date, wtr, depth) {
     ungroup() %>% 
     
     # Sort months in annual order
-    arrange(as.numeric(format(date, "%m"))) %>% 
+    mutate(month_num = as.numeric(format(date, "%m"))) %>% 
+    arrange(month_num) %>%
+    
+    # Group months if case that is desired
+    { 
+      if(!is.null(month_nums_to_grp))  
+        # First, filter out any month that is not part of the group 
+        filter(., month_num %in% month_nums_to_grp) %>% 
+        # Then, make them all the same group by replacing "month"
+        # with a string that is the made up month abbreviations
+        mutate(month = paste(month.abb[sort(month_nums_to_grp)], collapse=""))  
+      else .
+    } %>% 
     
     # Then find the mean for each month
     group_by(month) %>% 
@@ -203,7 +200,7 @@ mean_bot_mon <- function(date, wtr, depth) {
 }
 
 #' @description max of bottom temperature for each month
-max_bot_mon <- function(date, wtr, depth) {
+max_bot_mon <- function(date, wtr, depth, month_nums_to_grp = NULL) {
   data.frame(date, month = tolower(format(date, "%b")), depth = depth, wtr = wtr) %>% 
     # Calculate water temp at the bottom
     group_by(date) %>% 
@@ -211,7 +208,19 @@ max_bot_mon <- function(date, wtr, depth) {
     ungroup() %>%  
     
     # Sort months in annual order
-    arrange(as.numeric(format(date, "%m"))) %>% 
+    mutate(month_num = as.numeric(format(date, "%m"))) %>% 
+    arrange(month_num) %>%
+    
+    # Group months if case that is desired
+    { 
+      if(!is.null(month_nums_to_grp))  
+        # First, filter out any month that is not part of the group 
+        filter(., month_num %in% month_nums_to_grp) %>% 
+        # Then, make them all the same group by replacing "month"
+        # with a string that is the made up month abbreviations
+        mutate(month = paste(month.abb[sort(month_nums_to_grp)], collapse=""))  
+      else .
+    } %>% 
     
     # Then find the mean for each month
     group_by(month) %>% 
