@@ -1,9 +1,9 @@
 
-calculate_annual_metrics <- function(target_name, site_ids, file_pattern) {
+calculate_annual_metrics <- function(target_name, site_files) {
   
-  purrr::map(site_ids, function(id) {
+  purrr::map(site_files, function(fn) {
     
-    data_ready <- read_feather(sprintf(file_pattern, id)) %>% 
+    data_ready <- read_feather(fn) %>% 
       select(site_id, date = DateTime, starts_with("temp_")) %>% 
       pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
       mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
@@ -43,13 +43,17 @@ calculate_annual_metrics <- function(target_name, site_ids, file_pattern) {
       unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
                       mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas))
     
-    message(sprintf("Completed annual metrics for %s/%s", which(site_ids == id), length(site_ids)))
+    message(sprintf("Completed annual metrics for %s/%s", which(site_files == fn), length(site_files)))
     
     return(annual_metrics)
   }) %>% 
     bind_rows() %>% 
     readr::write_csv(target_name)
   
+}
+
+get_filenames_from_ind <- function(ind_file) {
+  names(yaml::read_yaml(ind_file))
 }
 
 # Collection of functions to calculate annual thermal metrics

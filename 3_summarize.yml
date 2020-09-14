@@ -51,10 +51,9 @@ targets:
   # Based these additional metrics on the ones included in a previous lake modeling
   # data release (see https://www.sciencebase.gov/catalog/item/57d9e887e4b090824ffb1098)
   
-  site_ids:
-    command: sb_group_info[[I("site_id")]]
+  site_files:
+    command: get_filenames_from_ind("2_process/out/2_pgdl_grp_tasks_completed.yml")
   3_summarize/out/annual_metrics_pgdl.csv:
     command: calculate_annual_metrics(
       target_name,
-      site_ids = sites_ids,
-      file_pattern = I("2_process/tmp/merged_pgdl_data_%s.feather"))
+      site_files = site_files)
