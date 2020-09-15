@@ -21,6 +21,7 @@ targets:
       - 2_process/out/2_process_lake_tasks.ind
       - 2_process/out/2_pgdl_lake_tasks.ind
       - 2_process/out/combined_obs_toha.csv
+      - 2_process/out/iceflags_unzipped.yml
   
   sb_group_info:
     command: read_csv("1_fetch/out/lake_metadata.csv")
@@ -196,3 +197,11 @@ targets:
       "2_process/src/create_obs_lake_task_plan.R")
     depends:
       - morphometry
+
+  ## Prepare ice flags for use in 3_summary
+  
+  2_process/out/iceflags_unzipped.yml:
+    command: unzip_data(
+      target_name = target_name,
+      data_file = "1_fetch/out/iceflags_downloaded.yml",
+      out_dir = I("2_process/tmp"))

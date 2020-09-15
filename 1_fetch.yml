@@ -16,6 +16,7 @@ targets:
       - 1_fetch/out/irradiance_downloaded.yml
       - 1_fetch/out/pb0_temp_pred_downloaded.yml
       - 1_fetch/out/clarity_downloaded.yml
+      - 1_fetch/out/iceflags_downloaded.yml
       - 1_fetch/out/temperature_observations.zip
       - 1_fetch/out/pb0_matched_to_observations.zip
       - 1_fetch/out/pgdl_matched_to_observations.zip
@@ -25,7 +26,7 @@ targets:
   
   toha_sbid:
     command: c(I("5e5d0bb9e4b01d50924f2b36"))
-  clarity_sbid:
+  clarity_ice_sbid:
     command: c(I("5e5d0b96e4b01d50924f2b34"))
   
   1_fetch/out/lake_metadata.csv:
@@ -69,8 +70,16 @@ targets:
   1_fetch/out/clarity_downloaded.yml:
     command: download_sb_files(
       target_name = target_name, 
-      sb_id = clarity_sbid, 
+      sb_id = clarity_ice_sbid, 
       keyword = I("clarity"), 
+      dest_folder = I("1_fetch/tmp"),
+      dummy = sb_dl_date)
+  
+  1_fetch/out/iceflags_downloaded.yml:
+    command: download_sb_files(
+      target_name = target_name, 
+      sb_id = clarity_ice_sbid, 
+      keyword = I("ice_flags"), 
       dest_folder = I("1_fetch/tmp"),
       dummy = sb_dl_date)
   
