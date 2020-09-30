@@ -7,27 +7,42 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
       select(site_id, date = DateTime, starts_with("temp_")) %>% 
       pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
       mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
-      mutate(year = as.numeric(format(date, "%Y"))) %>% 
+      mutate(year = as.numeric(format(date, "%Y")))
+    
+    data_stratification <- data_ready %>% 
+      group_by(date) %>% 
+      summarize(wtr_surf_daily = wtr[depth == 0],
+                wtr_bot_daily = find_wtr_at_depth(wtr, depth, calc_lake_bottom(depth))) %>% 
+      mutate(stratified = is_stratified(wtr_surf_daily, wtr_bot_daily)) %>% 
+      ungroup()
+    
+    data_ready_with_flags <- data_ready %>% 
       # Read and join ice flags for this site
       left_join(read_csv(ice_files[grepl(unique(data_ready$site_id), ice_files)]), by = "date") %>% 
-      arrange(date, depth) # Data was coming in correct, but just making sure
+      arrange(date, depth) %>% # Data was coming in correct, but just making sure 
+      # Add flag to say if the day is stratified or not. Doing this here because it will be used
+      # by multiple annual metrics below.
+      left_join(data_stratification, by = "date") # these were calculated by day and by adding into a long format data set, they will be duplicated
     
-    annual_metrics <- data_ready %>%
+    annual_metrics <- data_ready_with_flags %>%
       group_by(site_id, year) %>% 
       summarize(
+        # For each year, determine if the day is within the longest chunk of consecutive stratified days
+        in_stratified_period = is_in_longest_consective_chunk(stratified),
+        
         winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
-        # coef_var_30_60 = coef_var_30_60(),
+        coef_var_30_60 = coef_var_30_60(wtr, depth, ice),
         # coef_var_0_30 = coef_var_0_30(),
-        # stratification_onset_yday = stratification_onset_yday(),
-        # stratification_duration = stratification_duration(),
-        # sthermo_depth_mean = sthermo_depth_mean(),
+        stratification_onset_yday = stratification_onset_yday(date, in_stratified_period),
+        stratification_duration = stratification_duration(date, in_stratified_period),
+        sthermo_depth_mean = sthermo_depth_mean(date, depth, wtr, in_stratified_period),
         
         peak_temp = peak_temp(date, wtr, depth),
         gdd_wtr_0c = calc_gdd(wtr, 0),
         gdd_wtr_5c = calc_gdd(wtr, 5),
         gdd_wtr_10c = calc_gdd(wtr, 10),
         
-        # bottom_temp_at_strat = bottom_temp_at_strat(),
+        bottom_temp_at_strat = bottom_temp_at_strat(date, depth, wtr, unique(year), stratification_onset_yday, calc_lake_bottom(depth)),
         # schmidt_daily_annual_sum = schmidt_daily_annual_sum(),
         
         mean_surf_jas = calc_monthly_summary_stat(date, wtr, depth, "mean", 0, "surf", month_nums_to_grp = 7:9),
@@ -95,8 +110,11 @@ winter_dur_0_4 <- function(this_yr_date, this_yr_wtr, this_yr_depth, prev_yr_dat
 }
 
 #' @description Coefficient of Variation of surface temperature from 30-60 days post ice off.
-coef_var_30_60 <- function(date, wtr, ice) {
-  # ice dates are in 4_inputs in sciencebase
+coef_var_30_60 <- function(wtr, depth, ice) {
+  browser()
+  is_surface <- which(depth == 0)
+  wtr[is_surface]
+  ice[is_surface]
 }
 
 #' @description Coefficient of Variation of surface temperature from 0-30 days post ice off.
@@ -105,18 +123,26 @@ coef_var_0_30 <- function(date, wtr) {
 }
 
 #' @description Julian date at which stratification sets up (longest stratified period)
-stratification_onset_yday <- function(date, wtr) {
-  
+stratification_onset_yday <- function(date, stratified_period) {
+  # https://stackoverflow.com/questions/37447114/find-the-longest-continuous-chunk-of-true-in-a-boolean-vector
+  i_strat_start <- head(which(stratified_period), 1)
+  as.numeric(format(date[i_strat_start], "%j"))
 }
 
 #' @description Duration of stratified period
-stratification_duration <- function(date, wtr) {
-  
+stratification_duration <- function(date, stratified_period) {
+  i_unique_day <- which(!duplicated(date)) # Need one T/F per day for this sum method to work
+  sum(stratified_period[i_unique_day]) # count how many are in the longest stratified chunk
 }
 
 #' @description avg. thermocline depth in stratified period
-sthermo_depth_mean <- function(date, wtr) {
-  
+sthermo_depth_mean <- function(date, depth, wtr, stratified_period) {
+  tibble(date, depth, wtr, stratified_period) %>% 
+    filter(stratified_period) %>% 
+    group_by(date) %>% 
+    summarize(daily_thermocline = rLakeAnalyzer::thermo.depth(wtr, depth)) %>% 
+    pull(daily_thermocline) %>% 
+    mean(na.rm = TRUE)
 }
 
 #' @description Maximum observed surface temperature
@@ -126,13 +152,18 @@ peak_temp <- function(date, wtr, depth) {
 
 #' @description water temperature 0.1m from lake bottom on day of 
 #' stratification (as defined in original stratification measure)
-bottom_temp_at_strat <- function(date, wtr) {
-  
+bottom_temp_at_strat <- function(date, depth, wtr, year, stratification_onset_yday, depth_bot) {
+  date_strat_onset <- as.Date(stratification_onset_yday-1, origin = sprintf("%s-01-01", year))
+  i_strat_onset <- which(date == date_strat_onset)
+  find_wtr_at_depth(wtr[i_strat_onset], depth[i_strat_onset], depth_to_find = depth_bot)
 }
 
 #' @description Sum of daily Schmidt Stability values for calendar year.
 schmidt_daily_annual_sum <- function(date, wtr) {
-  
+  # TODO: need bathymetry data to do this.
+  # See https://github.com/USGS-R/mda.lakes/blob/afb436e047d2a9ca30dfdeae13745d2ee5109455/R/necsc_thermal_metrics_core.R#L121-L123
+  # rLakeAnalyzer::ts.schmidt.stability
+  # rLakeAnalyzer::schmidt.stability
 }
 
 #' @description mean, max, or min of a specific depth's temperature for a month or group of months
@@ -201,4 +232,13 @@ calc_lake_bottom <- function(depth) {
 # Assumes linear interpolation for depth-wtr relationship
 find_wtr_at_depth <- function(wtr, depth, depth_to_find) {
   approx(depth, wtr, depth_to_find)$y
+}
+
+is_stratified <- function(wtr_surface, wtr_bottom) {
+  # difference between top and bottom > 1 deg
+  abs(wtr_surface - wtr_bottom) > 1
+}
+
+is_in_longest_consective_chunk <- function(bool_vec) {
+  with(rle(bool_vec), rep(lengths == max(lengths[values]) & values, lengths))
 }
