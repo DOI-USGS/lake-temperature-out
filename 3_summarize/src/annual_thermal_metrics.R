@@ -37,24 +37,26 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         stratification_duration = stratification_duration(date, in_stratified_period),
         sthermo_depth_mean = sthermo_depth_mean(date, depth, wtr, in_stratified_period),
         
-        peak_temp = peak_temp(date, wtr, depth),
+        peak_temp = peak_temp(wtr_surf_daily),
         gdd_wtr_0c = calc_gdd(wtr, 0),
         gdd_wtr_5c = calc_gdd(wtr, 5),
         gdd_wtr_10c = calc_gdd(wtr, 10),
         
-        bottom_temp_at_strat = bottom_temp_at_strat(date, depth, wtr, unique(year), stratification_onset_yday, calc_lake_bottom(depth)),
+        bottom_temp_at_strat = bottom_temp_at_strat(date, wtr_bot_daily, unique(year), stratification_onset_yday),
         # schmidt_daily_annual_sum = schmidt_daily_annual_sum(),
         
-        mean_surf_jas = calc_monthly_summary_stat(date, wtr, depth, "mean", 0, "surf", month_nums_to_grp = 7:9),
-        max_surf_jas = calc_monthly_summary_stat(date, wtr, depth, "max", 0, "surf", month_nums_to_grp = 7:9),
-        mean_bot_jas = calc_monthly_summary_stat(date, wtr, depth, "mean", calc_lake_bottom(depth), "bot", month_nums_to_grp = 7:9),
-        max_bot_jas = calc_monthly_summary_stat(date, wtr, depth, "max", calc_lake_bottom(depth), "bot", month_nums_to_grp = 7:9),
+        # The following section of metrics return a data.frame per summarize command and
+        #   are unpacked into their real columns after using `unpack`
         
-        # Per month calcs return a data.frame and get "unpacked" below 
-        mean_surf_mon = calc_monthly_summary_stat(date, wtr, depth, "mean", 0, "surf"),
-        max_surf_mon = calc_monthly_summary_stat(date, wtr, depth, "max", 0, "surf"),
-        mean_bot_mon = calc_monthly_summary_stat(date, wtr, depth, "mean", calc_lake_bottom(depth), "bot"),
-        max_bot_mon = calc_monthly_summary_stat(date, wtr, depth, "max", calc_lake_bottom(depth), "bot"),
+        mean_surf_jas = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "mean", month_nums_to_grp = 7:9),
+        max_surf_jas = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "max", month_nums_to_grp = 7:9),
+        mean_bot_jas = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "mean", month_nums_to_grp = 7:9),
+        max_bot_jas = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "max", month_nums_to_grp = 7:9),
+        
+        mean_surf_mon = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "mean"),
+        max_surf_mon = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "max"),
+        mean_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "mean"),
+        max_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "max"),
         
         .groups = "keep" # suppresses message about regrouping
       ) %>% 
@@ -140,22 +142,22 @@ sthermo_depth_mean <- function(date, depth, wtr, stratified_period) {
   tibble(date, depth, wtr, stratified_period) %>% 
     filter(stratified_period) %>% 
     group_by(date) %>% 
-    summarize(daily_thermocline = rLakeAnalyzer::thermo.depth(wtr, depth)) %>% 
+    summarize(daily_thermocline = rLakeAnalyzer::thermo.depth(wtr, depth), .groups = "keep") %>% 
     pull(daily_thermocline) %>% 
     mean(na.rm = TRUE)
 }
 
 #' @description Maximum observed surface temperature
-peak_temp <- function(date, wtr, depth) {
-  max(wtr[which(depth == 0)], na.rm = TRUE)
+peak_temp <- function(wtr_surf) {
+  max(wtr_surf, na.rm = TRUE)
 }
 
 #' @description water temperature 0.1m from lake bottom on day of 
 #' stratification (as defined in original stratification measure)
-bottom_temp_at_strat <- function(date, depth, wtr, year, stratification_onset_yday, depth_bot) {
+bottom_temp_at_strat <- function(date, wtr_bot, year, stratification_onset_yday) {
   date_strat_onset <- as.Date(stratification_onset_yday-1, origin = sprintf("%s-01-01", year))
   i_strat_onset <- which(date == date_strat_onset)
-  find_wtr_at_depth(wtr[i_strat_onset], depth[i_strat_onset], depth_to_find = depth_bot)
+  unique(wtr_bot[i_strat_onset])
 }
 
 #' @description Sum of daily Schmidt Stability values for calendar year.
@@ -167,7 +169,7 @@ schmidt_daily_annual_sum <- function(date, wtr) {
 }
 
 #' @description mean, max, or min of a specific depth's temperature for a month or group of months
-calc_monthly_summary_stat <- function(date, wtr, depth, stat_type, depth_to_use, depth_prefix, month_nums_to_grp = NULL) {
+calc_monthly_summary_stat <- function(date, wtr_at_depth, depth_prefix, stat_type, month_nums_to_grp = NULL) {
   
   calc_summary_stat <- switch(
     stat_type,
@@ -177,13 +179,10 @@ calc_monthly_summary_stat <- function(date, wtr, depth, stat_type, depth_to_use,
     stop(sprintf("A `stat_type` of '%s' is not currently supported", stat_type))
   )
   
-  data.frame(date, depth = depth, wtr = wtr) %>% 
+  data.frame(date, wtr_at_depth = wtr_at_depth) %>% 
     
-    # Calculate water temp at the desired depth
-    # If `depth_to_use` exists in `depth`, this method still works
-    group_by(date) %>% 
-    summarize(wtr_at_depth = find_wtr_at_depth(wtr, depth, depth_to_find = depth_to_use), .groups = "keep") %>% 
-    ungroup() %>% 
+    # Make sure we have a unique set
+    unique() %>% 
     
     # Sort months in annual order
     mutate(month = tolower(format(date, "%b")),
@@ -203,8 +202,8 @@ calc_monthly_summary_stat <- function(date, wtr, depth, stat_type, depth_to_use,
     
     # Then find the mean for each month
     group_by(month) %>% 
-    summarize(stat_surf = calc_summary_stat(wtr_at_depth, na.rm = TRUE), .groups = "keep") %>% 
-    pivot_wider(names_from = month, values_from = stat_surf, names_prefix = sprintf("%s_%s_", stat_type, depth_prefix)) %>% 
+    summarize(stat_at_depth = calc_summary_stat(wtr_at_depth, na.rm = TRUE), .groups = "keep") %>% 
+    pivot_wider(names_from = month, values_from = stat_at_depth, names_prefix = sprintf("%s_%s_", stat_type, depth_prefix)) %>% 
     ungroup()
 }
 
