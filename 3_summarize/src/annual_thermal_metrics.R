@@ -36,6 +36,10 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
       group_by(site_id, year) %>% 
       summarize(
         
+        # Maximum observed surface temperature & corresponding date
+        peak_temp = max(wtr_surf_daily, na.rm = TRUE),
+        peak_temp_dt = date[which.max(wtr_surf_daily)],
+        
         winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
         coef_var_30_60 = coef_var_30_60(wtr, depth, ice),
         # coef_var_0_30 = coef_var_0_30(),
@@ -43,7 +47,6 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         stratification_duration = stratification_duration(date, in_stratified_period),
         sthermo_depth_mean = sthermo_depth_mean(date, depth, wtr, in_stratified_period),
         
-        peak_temp = peak_temp(wtr_surf_daily),
         gdd_wtr_0c = calc_gdd(wtr, 0),
         gdd_wtr_5c = calc_gdd(wtr, 5),
         gdd_wtr_10c = calc_gdd(wtr, 10),
@@ -151,11 +154,6 @@ sthermo_depth_mean <- function(date, depth, wtr, stratified_period) {
     summarize(daily_thermocline = rLakeAnalyzer::thermo.depth(wtr, depth), .groups = "keep") %>% 
     pull(daily_thermocline) %>% 
     mean(na.rm = TRUE)
-}
-
-#' @description Maximum observed surface temperature
-peak_temp <- function(wtr_surf) {
-  max(wtr_surf, na.rm = TRUE)
 }
 
 #' @description water temperature 0.1m from lake bottom on day of 
