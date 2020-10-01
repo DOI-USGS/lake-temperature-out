@@ -40,9 +40,13 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         peak_temp = max(wtr_surf_daily, na.rm = TRUE),
         peak_temp_dt = date[which.max(wtr_surf_daily)],
         
+        ice_on_date = get_ice_onoff(date, ice, peak_temp_dt, "on"),
+        ice_off_date = get_ice_onoff(date, ice, peak_temp_dt, "off"),
+        
         winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
-        coef_var_30_60 = coef_var_30_60(wtr, depth, ice),
-        # coef_var_0_30 = coef_var_0_30(),
+        coef_var_30_60 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(30,60)),
+        coef_var_0_30 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date),
+        
         # Metrics that deal with the stratified period
         stratification_onset_yday = stratification_onset_yday(date, in_stratified_period),
         stratification_duration = stratification_duration(date, in_stratified_period),
@@ -120,17 +124,20 @@ winter_dur_0_4 <- function(this_yr_date, this_yr_wtr, this_yr_depth, prev_yr_dat
    
 }
 
-#' @description Coefficient of Variation of surface temperature from 30-60 days post ice off.
-coef_var_30_60 <- function(wtr, depth, ice) {
-  browser()
-  is_surface <- which(depth == 0)
-  wtr[is_surface]
-  ice[is_surface]
-}
-
-#' @description Coefficient of Variation of surface temperature from 0-30 days post ice off.
-coef_var_0_30 <- function(date, wtr) {
+#' @description Coefficient of Variation of surface temperature from a range of days post ice off.
+coef_var <- function(date, wtr_surf, ice_off_date, day_past_range = c(0,30)) {
   
+  start_dt <- ice_off_date + day_past_range[1]
+  end_dt <- ice_off_date + day_past_range[2]
+  
+  # Need one dat & wtr_surf per day
+  i_unique_day <- which(!duplicated(date))
+  date_unique <- date[i_unique_day]
+  wtr_surf_unique <- wtr_surf[i_unique_day]
+  
+  wtr_post_ice <- wtr_surf_unique[date_unique >= start_dt & date_unique <= end_dt]
+  
+  sd(wtr_post_ice)/mean(wtr_post_ice) # TODO: Use `na.rm = TRUE`?
 }
 
 #' @description Julian date at which stratification sets up (longest stratified period)
@@ -244,4 +251,43 @@ is_stratified <- function(wtr_surface, wtr_bottom) {
 
 is_in_longest_consective_chunk <- function(bool_vec) {
   with(rle(bool_vec), rep(lengths == max(lengths[values]) & values, lengths))
+}
+
+get_ice_onoff <- function(date, ice, peak_temp_dt, on_or_off) {
+  
+  # TODO: does this need to involve past and future year info like the function
+  #   from mda.lakes? https://github.com/USGS-R/mda.lakes/blob/afb436e047d2a9ca30dfdeae13745d2ee5109455/R/get_ice_onoff.R#L17
+  
+  stopifnot(on_or_off %in% c("on", "off"))
+  
+  # Need one date & ice value per day (not per depth & day)
+  i_unique_day <- which(!duplicated(date))
+  date_unique <- date[i_unique_day]
+  ice_unique <- ice[i_unique_day]
+
+  if(on_or_off == "on") {
+    # Second half of year, which would be when ice forms ("ice on")
+    date_second_half <- date_unique[date_unique > peak_temp_dt]
+    ice_second_half <- ice_unique[date_unique > peak_temp_dt]
+    
+    # If there is no ice present during that part of the year, there is no ice off date because it wasn't there
+    if(!any(ice_second_half)) return(NA) #TODO: or what should we return?
+    
+    # Find start of longest ice period during second half of the year
+    ice_on <- head(which(is_in_longest_consective_chunk(ice_second_half)), 1)
+    return(date_second_half[ice_on])
+    
+  } else if(on_or_off == "off") {
+    # First half of year, which would be when ice melts ("ice off")
+    date_first_half <- date_unique[date_unique <= peak_temp_dt]
+    ice_first_half <- ice_unique[date_unique <= peak_temp_dt]
+    
+    # If there is no ice present during that part of the year, there is no ice off date because it wasn't there
+    if(!any(ice_first_half)) return(NA) #TODO: or do we return the first day of the year?
+    
+    # Find end of longest ice period during first half of the year
+    ice_off <- tail(which(is_in_longest_consective_chunk(ice_first_half)), 1)
+    return(date_first_half[ice_off])
+  }
+  
 }
