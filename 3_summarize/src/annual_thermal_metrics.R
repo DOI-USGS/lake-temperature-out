@@ -81,12 +81,13 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         
         spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
         post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
-        # dateOver[X]
+        date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
         
         .groups = "keep" # suppresses message about regrouping
       ) %>% 
       unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
-                      mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas))
+                      mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
+                      date_over_temps))
     
     message(sprintf("Completed annual metrics for %s/%s", which(site_files == fn), length(site_files)))
     
@@ -262,6 +263,23 @@ post_ice_warm_rate <- function(date, wtr_surf, ice_off_date) {
   names(deg_per_day) <- NULL
   
   return(deg_per_day)
+}
+
+#' date where average surface temperature reaches a certain temperature in deg C
+#' returns the Julian day
+calc_first_day_above_temp <- function(date, wtr_surf, temperatures) {
+  
+  # Need one dat & wtr_surf per day
+  i_unique_day <- which(!duplicated(date))
+  date_unique <- date[i_unique_day]
+  wtr_surf_unique <- wtr_surf[i_unique_day]
+  
+  date_above_df <- lapply(temperatures, function(temp) {
+    date_unique[wtr_surf_unique >= temp] %>% head(1) %>% format("%j") %>% as.numeric()
+  }) %>% data.frame()
+  names(date_above_df) <- sprintf("date_over_%s", temperatures)
+  
+  return(date_above_df)
 }
 
 ## Helper functions for the above
