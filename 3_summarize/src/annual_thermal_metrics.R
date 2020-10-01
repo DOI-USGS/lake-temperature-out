@@ -71,6 +71,18 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         mean_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "mean"),
         max_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "max"),
         
+        # Hansen metrics
+        # See https://github.com/USGS-R/necsc-lake-modeling/blob/d37377ea422b9be324e8bd203fc6eecc36966401/data/habitat_metrics_table_GH.csv
+        
+        # I think these need hypso, like the schmidt one, so waiting til last to do that
+        # days_[X]
+        # height_[X]
+        # vol_[X]
+        
+        spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
+        # post_ice_warm_rate
+        # dateOver[X]
+        
         .groups = "keep" # suppresses message about regrouping
       ) %>% 
       unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
@@ -216,6 +228,20 @@ calc_monthly_summary_stat <- function(date, wtr_at_depth, depth_prefix, stat_typ
     summarize(stat_at_depth = calc_summary_stat(wtr_at_depth, na.rm = TRUE), .groups = "keep") %>% 
     pivot_wider(names_from = month, values_from = stat_at_depth, names_prefix = sprintf("%s_%s_", stat_type, depth_prefix)) %>% 
     ungroup()
+}
+
+#' duration of surface temperature between two temperatures degrees C (Spring only)
+#' Duration of optimal incubation period
+spring_days_incub <- function(date, wtr_surf, wtr_range) {
+  # TODO: does it need to be longest consecutive days?
+  
+  # Need one date & ice value per day (not per depth & day)
+  i_unique_day <- which(!duplicated(date))
+  date_unique <- date[i_unique_day]
+  wtr_surf_unique <- wtr_surf[i_unique_day]
+  
+  is_spring <- as.numeric(format(date_unique, "%m")) <= 5 # Before June 1 = spring
+  sum(wtr_surf_unique[is_spring] >= wtr_range[1] & wtr_surf_unique[is_spring] <= wtr_range[2])
 }
 
 ## Helper functions for the above
