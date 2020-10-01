@@ -45,7 +45,7 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         
         winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
         coef_var_30_60 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(30,60)),
-        coef_var_0_30 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date),
+        coef_var_0_30 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(0,30)),
         
         # Metrics that deal with the stratified period
         stratification_onset_yday = stratification_onset_yday(date, in_stratified_period),
@@ -80,7 +80,7 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         # vol_[X]
         
         spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
-        # post_ice_warm_rate
+        post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
         # dateOver[X]
         
         .groups = "keep" # suppresses message about regrouping
@@ -137,17 +137,14 @@ winter_dur_0_4 <- function(this_yr_date, this_yr_wtr, this_yr_depth, prev_yr_dat
 }
 
 #' @description Coefficient of Variation of surface temperature from a range of days post ice off.
-coef_var <- function(date, wtr_surf, ice_off_date, day_past_range = c(0,30)) {
-  
-  start_dt <- ice_off_date + day_past_range[1]
-  end_dt <- ice_off_date + day_past_range[2]
+coef_var <- function(date, wtr_surf, ice_off_date, day_post_range) {
   
   # Need one dat & wtr_surf per day
   i_unique_day <- which(!duplicated(date))
   date_unique <- date[i_unique_day]
   wtr_surf_unique <- wtr_surf[i_unique_day]
   
-  wtr_post_ice <- wtr_surf_unique[date_unique >= start_dt & date_unique <= end_dt]
+  wtr_post_ice <- get_wtr_post_ice_off(date_unique, wtr_surf_unique, ice_off_date, day_post_range)
   
   sd(wtr_post_ice)/mean(wtr_post_ice) # TODO: Use `na.rm = TRUE`?
 }
@@ -244,6 +241,29 @@ spring_days_incub <- function(date, wtr_surf, wtr_range) {
   sum(wtr_surf_unique[is_spring] >= wtr_range[1] & wtr_surf_unique[is_spring] <= wtr_range[2])
 }
 
+#' rate of warming post ice off
+#' average change in surface temp (degrees C per day) 30 days post ice off
+post_ice_warm_rate <- function(date, wtr_surf, ice_off_date) {
+  
+  if(is.na(ice_off_date)) {
+    return(NA) # TODO: is it right to return NA when there is no ice off for this year?
+  }
+  
+  # Need one dat & wtr_surf per day
+  i_unique_day <- which(!duplicated(date))
+  date_unique <- date[i_unique_day]
+  wtr_surf_unique <- wtr_surf[i_unique_day]
+  
+  day_post_range <- c(1,30)
+  wtr_post_ice <- get_wtr_post_ice_off(date_unique, wtr_surf_unique, ice_off_date, day_post_range)
+  
+  days_for_lm <- day_post_range[1]:day_post_range[2]
+  deg_per_day <- lm(wtr_post_ice ~ days_for_lm)$coefficients[2]
+  names(deg_per_day) <- NULL
+  
+  return(deg_per_day)
+}
+
 ## Helper functions for the above
 
 get_last_years_data <- function(this_year, dat_all) {
@@ -316,4 +336,8 @@ get_ice_onoff <- function(date, ice, peak_temp_dt, on_or_off) {
     return(date_first_half[ice_off])
   }
   
+}
+
+get_wtr_post_ice_off <- function(date, wtr, ice_off_date, day_post_range) {
+  wtr[date >= ice_off_date + day_post_range[1] & date <= ice_off_date + day_post_range[2]]
 }
