@@ -12,9 +12,17 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
     data_stratification <- data_ready %>% 
       group_by(date) %>% 
       summarize(wtr_surf_daily = wtr[depth == 0],
-                wtr_bot_daily = find_wtr_at_depth(wtr, depth, calc_lake_bottom(depth))) %>% 
+                wtr_bot_daily = find_wtr_at_depth(wtr, depth, calc_lake_bottom(depth)),
+                .groups = "keep") %>% 
       mutate(stratified = is_stratified(wtr_surf_daily, wtr_bot_daily)) %>% 
-      ungroup()
+      ungroup() %>% 
+      # Add year back in because it is dropped in `group_by` above
+      mutate(year = as.numeric(format(date, "%Y"))) %>% 
+      group_by(year) %>% 
+      # For each year, add a column to say whether a day is within the longest chunk of consecutive stratified days
+      mutate(in_stratified_period = is_in_longest_consective_chunk(stratified)) %>% 
+      ungroup() %>% 
+      select(-year)
     
     data_ready_with_flags <- data_ready %>% 
       # Read and join ice flags for this site
@@ -27,8 +35,6 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
     annual_metrics <- data_ready_with_flags %>%
       group_by(site_id, year) %>% 
       summarize(
-        # For each year, determine if the day is within the longest chunk of consecutive stratified days
-        in_stratified_period = is_in_longest_consective_chunk(stratified),
         
         winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
         coef_var_30_60 = coef_var_30_60(wtr, depth, ice),
