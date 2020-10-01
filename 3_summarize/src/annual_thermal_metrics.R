@@ -43,15 +43,15 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
         coef_var_30_60 = coef_var_30_60(wtr, depth, ice),
         # coef_var_0_30 = coef_var_0_30(),
+        # Metrics that deal with the stratified period
         stratification_onset_yday = stratification_onset_yday(date, in_stratified_period),
         stratification_duration = stratification_duration(date, in_stratified_period),
         sthermo_depth_mean = sthermo_depth_mean(date, depth, wtr, in_stratified_period),
+        bottom_temp_at_strat = bottom_temp_at_strat(date, wtr_bot_daily, unique(year), stratification_onset_yday),
         
         gdd_wtr_0c = calc_gdd(wtr, 0),
         gdd_wtr_5c = calc_gdd(wtr, 5),
         gdd_wtr_10c = calc_gdd(wtr, 10),
-        
-        bottom_temp_at_strat = bottom_temp_at_strat(date, wtr_bot_daily, unique(year), stratification_onset_yday),
         # schmidt_daily_annual_sum = schmidt_daily_annual_sum(),
         
         # The following section of metrics return a data.frame per summarize command and
