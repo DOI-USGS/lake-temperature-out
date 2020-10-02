@@ -75,9 +75,10 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         # See https://github.com/USGS-R/necsc-lake-modeling/blob/d37377ea422b9be324e8bd203fc6eecc36966401/data/habitat_metrics_table_GH.csv
         
         # I think these need hypso, like the schmidt one, so waiting til last to do that
-        # days_[X]
-        # height_[X]
-        # vol_[X]
+        # vol_[X] #TODO: calc vol too
+        days_height_vol_in_range = calc_days_height_vol_within_range(date, depth, wtr, 
+                                                                     temp_low = c(12, 10.6, 18.2, 18, 19.3, 19, 20.6, 20, 22, 23, 25, 26.2, 26, 26, 28, 28, 29, 30), 
+                                                                     temp_high = c(28, 11.2, 28.2, 22, 23.3, 23, 23.2, 30, 23, 31, 29, 32, 28, 30, 29, 32, 100, 31)),
         
         spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
         post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
@@ -87,7 +88,8 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
       ) %>% 
       unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
                       mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
-                      date_over_temps))
+                      date_over_temps, days_height_vol_in_range)) %>% 
+      ungroup()
     
     message(sprintf("Completed annual metrics for %s/%s", which(site_files == fn), length(site_files)))
     
@@ -228,6 +230,28 @@ calc_monthly_summary_stat <- function(date, wtr_at_depth, depth_prefix, stat_typ
     ungroup()
 }
 
+#' days in which there is any part of water column in a temperature range
+calc_days_height_vol_within_range <- function(date, depth, wtr, temp_low, temp_high) {
+  stopifnot(length(temp_low) == length(temp_high))
+  
+  grpd_data <- tibble(date, depth, wtr) %>% 
+    group_by(date)
+  
+  purrr::map(seq_along(temp_low), function(i, grpd_data, temp_low, temp_high) {
+    grpd_data %>% 
+      summarize(Z1_Z2 = find_Z1_Z2(wtr, depth, temp_high[i], temp_low[i]), .groups = "keep") %>% 
+      ungroup() %>% 
+      unpack(cols = Z1_Z2) %>% 
+      mutate(daily_height_in_range = Z2 - Z1,
+             # This is where volume calc will go
+             day_has_wtr_in_range = !is.na(daily_height_in_range)) %>% 
+      summarize(!!sprintf("height_%s_%s", temp_low[i], temp_high[i]) := sum(daily_height_in_range, na.rm = TRUE),
+                !!sprintf("days_%s_%s", temp_low[i], temp_high[i]) := sum(day_has_wtr_in_range))
+  }, grpd_data, temp_low, temp_high) %>% 
+    bind_cols()
+
+}
+
 #' duration of surface temperature between two temperatures degrees C (Spring only)
 #' Duration of optimal incubation period
 spring_days_incub <- function(date, wtr_surf, wtr_range) {
@@ -358,4 +382,45 @@ get_ice_onoff <- function(date, ice, peak_temp_dt, on_or_off) {
 
 get_wtr_post_ice_off <- function(date, wtr, ice_off_date, day_post_range) {
   wtr[date >= ice_off_date + day_post_range[1] & date <= ice_off_date + day_post_range[2]]
+}
+
+# This is based on the code in calculate_toha, but it was challenging to create
+#   a shared function to do this, so kept it separate.
+find_Z1_Z2 <- function(wtr, depth, wtr_upper_bound, wtr_lower_bound) {
+  
+  z_surface <- 0
+  z_max <- max(depth) #TODO: include hypso bc max might be different than wtr depths
+  
+  if(length(unique(wtr)) == 1) {
+    # In a well-mixed lake, it is possible for all wtr values to be the same
+    # which causes approx to throw an error. Return NAs for the Zs and let
+    # checks below determine if benth area is all (or partially) above or 
+    # below the lake and set Zs based on that.
+    Z1_Z2 <- c(NA,NA)
+  } else {
+    # Had to explicitly add `ties=mean` to suppress warning
+    # https://community.rstudio.com/t/conditionally-interpolate-values-for-one-data-frame-based-on-another-lookup-table-per-group-solved/40922/5
+    Z1_Z2 <- approx(wtr, depth, xout=c(wtr_upper_bound, wtr_lower_bound), ties=mean)$y
+  }
+  
+  Z1 <- Z1_Z2[1]
+  Z2 <- Z1_Z2[2]
+  
+  wtr_surface <- wtr[which.min(depth)] # wtr_surface will be whatever the top-most wtr is
+  wtr_bottom <- wtr[which.max(depth)] # wtr_bottom will be whatever the bottom-most wtr is
+  
+  # Adjust thermal range depths based on a few different edge-case scenarios
+  
+  completely_below_lake <- wtr_bottom > wtr_upper_bound # if THA is completely below lake, benthic area is 0 (too hot)
+  completely_above_lake <- wtr_surface < wtr_lower_bound # if THA is completely above lake, benthic area is 0 (too cold)
+  
+  # if THA extends above lake, use the surface as Z1 to calc THA
+  extends_above_lake <- wtr_surface < wtr_upper_bound & !completely_above_lake
+  Z1[extends_above_lake] <- z_surface
+  
+  # if THA extends below lake, use the bottom as Z2 to calc THA
+  extends_below_lake <- wtr_bottom > wtr_lower_bound & !completely_below_lake
+  Z2[extends_below_lake] <- z_max
+  
+  return(tibble(Z1 = Z1, Z2 = Z2))
 }
