@@ -320,7 +320,7 @@ get_last_years_data <- function(this_year, dat_all) {
 
 #' @description Cumulative sum of degrees >base degrees for entire year
 calc_gdd <- function(wtr, base = 0) {
-  sum(wtr[wtr > base])
+  sum(wtr[wtr > base], na.rm = TRUE)
 }
 
 # Uses 0.1 m from the bottom as the "bottom"
