@@ -56,7 +56,7 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         gdd_wtr_0c = calc_gdd(wtr, 0),
         gdd_wtr_5c = calc_gdd(wtr, 5),
         gdd_wtr_10c = calc_gdd(wtr, 10),
-        # schmidt_daily_annual_sum = schmidt_daily_annual_sum(),
+        # TODO schmidt_daily_annual_sum = schmidt_daily_annual_sum(),
         
         # The following section of metrics return a data.frame per summarize command and
         #   are unpacked into their real columns after using `unpack`
@@ -75,7 +75,7 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         # See https://github.com/USGS-R/necsc-lake-modeling/blob/d37377ea422b9be324e8bd203fc6eecc36966401/data/habitat_metrics_table_GH.csv
         
         # I think these need hypso, like the schmidt one, so waiting til last to do that
-        # vol_[X] #TODO: calc vol too
+        # TODO vol_[X] need to calc vol too
         days_height_vol_in_range = calc_days_height_vol_within_range(date, depth, wtr, 
                                                                      temp_low = c(12, 10.6, 18.2, 18, 19.3, 19, 20.6, 20, 22, 23, 25, 26.2, 26, 26, 28, 28, 29, 30), 
                                                                      temp_high = c(28, 11.2, 28.2, 22, 23.3, 23, 23.2, 30, 23, 31, 29, 32, 28, 30, 29, 32, 100, 31)),
