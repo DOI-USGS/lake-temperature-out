@@ -2,6 +2,7 @@
 calculate_annual_metrics <- function(target_name, site_files, ice_files) {
   
   purrr::map(site_files, function(fn) {
+    start_tm <- Sys.time()
     
     data_ready <- read_feather(fn) %>% 
       select(site_id, date = DateTime, starts_with("temp_")) %>% 
@@ -91,7 +92,9 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
                       date_over_temps, days_height_vol_in_range)) %>% 
       ungroup()
     
-    message(sprintf("Completed annual metrics for %s/%s", which(site_files == fn), length(site_files)))
+    message(sprintf("Completed annual metrics for %s/%s in %s min", 
+                    which(site_files == fn), length(site_files), 
+                    round(as.numeric(Sys.time() - start_tm, units = "mins"), 2)))
     
     return(annual_metrics)
   }) %>% 
