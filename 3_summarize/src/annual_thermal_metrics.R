@@ -45,8 +45,8 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         ice_off_date = get_ice_onoff(date, ice, peak_temp_dt, "off"),
         
         winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
-        coef_var_30_60 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(30,60)),
-        coef_var_0_30 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(0,30)),
+        coef_var_30_60 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(31,60)),
+        coef_var_0_30 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(1,30)),
         
         # Metrics that deal with the stratified period
         stratification_onset_yday = stratification_onset_yday(date, in_stratified_period),
