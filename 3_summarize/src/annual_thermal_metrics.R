@@ -344,7 +344,16 @@ is_stratified <- function(wtr_surface, wtr_bottom, force_warm = FALSE) {
 }
 
 is_in_longest_consective_chunk <- function(bool_vec) {
-  with(rle(bool_vec), rep(lengths == max(lengths[values]) & values, lengths))
+  # Added check for duplicates to prevent counting more than one period
+  # if they are equal in length.
+  continuous_sections <- rle(bool_vec)
+  
+  # Identify any periods that are duplicated, so that we can pick the first one
+  continuous_sections$is_duplicated <- NA
+  continuous_sections$is_duplicated[continuous_sections$values] <- duplicated(continuous_sections$lengths[continuous_sections$values])
+  continuous_sections$is_duplicated[!continuous_sections$values] <- FALSE
+  
+  with(continuous_sections, rep(!is_duplicated & lengths == max(lengths[values]) & values, lengths))
 }
 
 get_ice_onoff <- function(date, ice, peak_temp_dt, on_or_off) {
