@@ -158,8 +158,9 @@ coef_var <- function(date, wtr_surf, ice_off_date, day_post_range) {
 #' @description Julian date at which stratification sets up (longest stratified period)
 stratification_onset_yday <- function(date, stratified_period) {
   # https://stackoverflow.com/questions/37447114/find-the-longest-continuous-chunk-of-true-in-a-boolean-vector
-  i_strat_start <- head(which(stratified_period), 1)
-  as.numeric(format(date[i_strat_start], "%j"))
+  i_unique_day <- which(!duplicated(date))
+  i_strat_start <- head(which(stratified_period[i_unique_day]), 1)
+  as.numeric(format(date[i_unique_day][i_strat_start], "%j"))
 }
 
 #' @description Duration of stratified period
