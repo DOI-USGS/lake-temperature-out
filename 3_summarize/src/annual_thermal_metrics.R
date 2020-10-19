@@ -15,7 +15,7 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
       summarize(wtr_surf_daily = wtr[depth == 0],
                 wtr_bot_daily = find_wtr_at_depth(wtr, depth, calc_lake_bottom(depth)),
                 .groups = "keep") %>% 
-      mutate(stratified = is_stratified(wtr_surf_daily, wtr_bot_daily)) %>% 
+      mutate(stratified = is_stratified(wtr_surf_daily, wtr_bot_daily, force_warm = TRUE)) %>% 
       ungroup() %>% 
       # Add year back in because it is dropped in `group_by` above
       mutate(year = as.numeric(format(date, "%Y"))) %>% 
@@ -335,9 +335,11 @@ find_wtr_at_depth <- function(wtr, depth, depth_to_find) {
   approx(depth, wtr, depth_to_find)$y
 }
 
-is_stratified <- function(wtr_surface, wtr_bottom) {
+is_stratified <- function(wtr_surface, wtr_bottom, force_warm = FALSE) {
   # difference between top and bottom > 1 deg
-  abs(wtr_surface - wtr_bottom) > 1
+  t_diff <- wtr_surface - wtr_bottom
+  if(!force_warm) t_diff <- abs(t_diff) # Count both cold and warm periods
+  t_diff >= 1
 }
 
 is_in_longest_consective_chunk <- function(bool_vec) {
