@@ -148,9 +148,8 @@ winter_dur_0_4 <- function(this_yr_date, this_yr_wtr, this_yr_depth, prev_yr_dat
 coef_var <- function(date, wtr_surf, ice_off_date, day_post_range) {
   
   # Need one dat & wtr_surf per day
-  i_unique_day <- which(!duplicated(date))
-  date_unique <- date[i_unique_day]
-  wtr_surf_unique <- wtr_surf[i_unique_day]
+  date_unique <- unique_day(date)
+  wtr_surf_unique <- unique_day_data(date, wtr_surf)
   
   wtr_post_ice <- get_wtr_post_ice_off(date_unique, wtr_surf_unique, ice_off_date, day_post_range)
   
@@ -160,15 +159,16 @@ coef_var <- function(date, wtr_surf, ice_off_date, day_post_range) {
 #' @description Julian date at which stratification sets up (longest stratified period)
 stratification_onset_yday <- function(date, stratified_period) {
   # https://stackoverflow.com/questions/37447114/find-the-longest-continuous-chunk-of-true-in-a-boolean-vector
-  i_unique_day <- which(!duplicated(date))
-  i_strat_start <- head(which(stratified_period[i_unique_day]), 1)
-  as.numeric(format(date[i_unique_day][i_strat_start], "%j"))
+  date_unique <- unique_day(date)
+  strat_unique <- unique_day_data(date, stratified_period)
+  i_strat_start <- head(which(strat_unique), 1)
+  as.numeric(format(date_unique[i_strat_start], "%j"))
 }
 
 #' @description Duration of stratified period
 stratification_duration <- function(date, stratified_period) {
-  i_unique_day <- which(!duplicated(date)) # Need one T/F per day for this sum method to work
-  sum(stratified_period[i_unique_day]) # count how many are in the longest stratified chunk
+  strat_unique <- unique_day_data(date, stratified_period) # Need one T/F per day for this sum method to work
+  sum(strat_unique) # count how many are in the longest stratified chunk
 }
 
 #' @description avg. thermocline depth in stratified period
@@ -263,10 +263,9 @@ calc_days_height_vol_within_range <- function(date, depth, wtr, temp_low, temp_h
 spring_days_incub <- function(date, wtr_surf, wtr_range) {
   # TODO: does it need to be longest consecutive days?
   
-  # Need one date & ice value per day (not per depth & day)
-  i_unique_day <- which(!duplicated(date))
-  date_unique <- date[i_unique_day]
-  wtr_surf_unique <- wtr_surf[i_unique_day]
+  # Need one dat & wtr_surf per day
+  date_unique <- unique_day(date)
+  wtr_surf_unique <- unique_day_data(date, wtr_surf)
   
   is_spring <- as.numeric(format(date_unique, "%m")) <= 5 # Before June 1 = spring
   sum(wtr_surf_unique[is_spring] >= wtr_range[1] & wtr_surf_unique[is_spring] <= wtr_range[2])
@@ -281,9 +280,8 @@ post_ice_warm_rate <- function(date, wtr_surf, ice_off_date) {
   }
   
   # Need one dat & wtr_surf per day
-  i_unique_day <- which(!duplicated(date))
-  date_unique <- date[i_unique_day]
-  wtr_surf_unique <- wtr_surf[i_unique_day]
+  date_unique <- unique_day(date)
+  wtr_surf_unique <- unique_day_data(date, wtr_surf)
   
   day_post_range <- c(1,30)
   wtr_post_ice <- get_wtr_post_ice_off(date_unique, wtr_surf_unique, ice_off_date, day_post_range)
@@ -300,9 +298,8 @@ post_ice_warm_rate <- function(date, wtr_surf, ice_off_date) {
 calc_first_day_above_temp <- function(date, wtr_surf, temperatures) {
   
   # Need one dat & wtr_surf per day
-  i_unique_day <- which(!duplicated(date))
-  date_unique <- date[i_unique_day]
-  wtr_surf_unique <- wtr_surf[i_unique_day]
+  date_unique <- unique_day(date)
+  wtr_surf_unique <- unique_day_data(date, wtr_surf)
   
   date_above_df <- lapply(temperatures, function(temp) {
     date_unique[wtr_surf_unique >= temp] %>% head(1) %>% format("%j") %>% as.numeric()
@@ -370,9 +367,9 @@ get_ice_onoff <- function(date, ice, peak_temp_dt, on_or_off) {
   stopifnot(on_or_off %in% c("on", "off"))
   
   # Need one date & ice value per day (not per depth & day)
-  i_unique_day <- which(!duplicated(date))
-  date_unique <- date[i_unique_day]
-  ice_unique <- ice[i_unique_day]
+  date_unique <- unique_day(date)
+  ice_unique <- unique_day_data(date, ice)
+  
 
   if(on_or_off == "on") {
     # Second half of year, which would be when ice forms ("ice on")
@@ -445,3 +442,17 @@ find_Z1_Z2 <- function(wtr, depth, wtr_upper_bound, wtr_lower_bound) {
   
   return(tibble(Z1 = Z1, Z2 = Z2))
 }
+
+unique_day_data <- function(date, vec) {
+  # Need one unique val per day
+  # Duplicated because a column of wtr_surf and 
+  # wtr_bot were added to a dataset with one 
+  # row per day per depth.
+  i_unique_day <- which(!duplicated(date))
+  return(vec[i_unique_day])
+}
+
+unique_day <- function(date) {
+  # Unique day dates only
+  i_unique_day <- which(!duplicated(date))
+  return(date[i_unique_day])
