@@ -142,7 +142,9 @@ winter_dur_0_4 <- function(this_yr_date, this_yr_wtr, this_yr_depth, prev_yr_dat
    
 }
 
-#' @description Coefficient of Variation of surface temperature from a range of days post ice off.
+#' @description Coefficient of Variation of surface temperature from a range of days 
+#' post ice off. This calculation is the same as Winslow 2017, but that one wasn't 
+#' named intuitively (`coef_var_0_30` instead of `coef_var_1_30`)
 coef_var <- function(date, wtr_surf, ice_off_date, day_post_range) {
   
   # Need one dat & wtr_surf per day
@@ -336,6 +338,10 @@ find_wtr_at_depth <- function(wtr, depth, depth_to_find) {
   approx(depth, wtr, depth_to_find)$y
 }
 
+#' @description Determines if a day is stratified by comparing the
+#' difference between the surface and bottom temperatures. Uses the
+#' `force_warm` flag to either count only warm stratified periods
+#' or count both warm and cool stratified periods.
 is_stratified <- function(wtr_surface, wtr_bottom, force_warm = FALSE) {
   # difference between top and bottom > 1 deg
   t_diff <- wtr_surface - wtr_bottom
