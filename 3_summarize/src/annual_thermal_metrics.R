@@ -53,10 +53,10 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
         stratification_duration = stratification_duration(date, in_stratified_period),
         sthermo_depth_mean = sthermo_depth_mean(date, depth, wtr, in_stratified_period),
         bottom_temp_at_strat = bottom_temp_at_strat(date, wtr_bot_daily, unique(year), stratification_onset_yday),
-        
-        gdd_wtr_0c = calc_gdd(wtr, 0),
-        gdd_wtr_5c = calc_gdd(wtr, 5),
-        gdd_wtr_10c = calc_gdd(wtr, 10),
+
+        gdd_wtr_0c = calc_gdd(date, wtr_surf_daily, 0),
+        gdd_wtr_5c = calc_gdd(date, wtr_surf_daily, 5),
+        gdd_wtr_10c = calc_gdd(date, wtr_surf_daily, 10),
         # TODO schmidt_daily_annual_sum = schmidt_daily_annual_sum(),
         
         # The following section of metrics return a data.frame per summarize command and
@@ -319,8 +319,9 @@ get_last_years_data <- function(this_year, dat_all) {
 
 
 #' @description Cumulative sum of degrees >base degrees for entire year
-calc_gdd <- function(wtr, base = 0) {
-  sum(wtr[wtr > base], na.rm = TRUE)
+calc_gdd <- function(date, wtr, base = 0) {
+  wtr_unique <- unique_day_data(date, wtr)
+  sum(wtr_unique[wtr_unique > base], na.rm=TRUE)
 }
 
 # Uses 0.1 m from the bottom as the "bottom"
