@@ -1,5 +1,5 @@
 
-calculate_annual_metrics <- function(target_name, site_files, ice_files) {
+calculate_annual_metrics <- function(target_name, site_files, ice_files, morphometry) {
   
   purrr::map(site_files, function(fn) {
     start_tm <- Sys.time()
@@ -9,6 +9,14 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
       pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
       mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
       mutate(year = as.numeric(format(date, "%Y")))
+    
+    # Get hypso for this site
+    site_id <- unique(data_ready$site_id)
+    morphometry_site <- morphometry[[site_id]]
+    hypso <- data.frame(H = morphometry_site$H, A = morphometry_site$A) %>% 
+      mutate(depths = max(H) - H, areas = A) %>% 
+      arrange(depths) %>% 
+      select(depths, areas)
     
     data_stratification <- data_ready %>% 
       group_by(date) %>% 
@@ -27,7 +35,7 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files) {
     
     data_ready_with_flags <- data_ready %>% 
       # Read and join ice flags for this site
-      left_join(read_csv(ice_files[grepl(unique(data_ready$site_id), ice_files)]), by = "date") %>% 
+      left_join(read_csv(ice_files[grepl(site_id, ice_files)]), by = "date") %>% 
       arrange(date, depth) %>% # Data was coming in correct, but just making sure 
       # Add flag to say if the day is stratified or not. Doing this here because it will be used
       # by multiple annual metrics below.
