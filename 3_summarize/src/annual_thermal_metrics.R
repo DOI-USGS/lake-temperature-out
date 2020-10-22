@@ -82,11 +82,9 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files, morphom
         
         # Hansen metrics
         # See https://github.com/USGS-R/necsc-lake-modeling/blob/d37377ea422b9be324e8bd203fc6eecc36966401/data/habitat_metrics_table_GH.csv
-        
-        # I think these need hypso, like the schmidt one, so waiting til last to do that
-        # TODO vol_[X] need to calc vol too
-        days_height_vol_in_range = calc_days_height_vol_within_range(date, depth, wtr, 
-                                                                     temp_low = c(12, 10.6, 18.2, 18, 19.3, 19, 20.6, 20, 22, 23, 25, 26.2, 26, 26, 28, 28, 29, 30), 
+
+        days_height_vol_in_range = calc_days_height_vol_within_range(date, depth, wtr, hypso,
+                                                                     temp_low = c(12, 10.6, 18.2, 18, 19.3, 19, 20.6, 20, 22, 23, 25, 26.2, 26, 26, 28, 28, 29, 30),
                                                                      temp_high = c(28, 11.2, 28.2, 22, 23.3, 23, 23.2, 30, 23, 31, 29, 32, 28, 30, 29, 32, 100, 31)),
         
         spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
@@ -248,23 +246,24 @@ calc_monthly_summary_stat <- function(date, wtr_at_depth, depth_prefix, stat_typ
 }
 
 #' days in which there is any part of water column in a temperature range
-calc_days_height_vol_within_range <- function(date, depth, wtr, temp_low, temp_high) {
+calc_days_height_vol_within_range <- function(date, depth, wtr, hypso, temp_low, temp_high) {
   stopifnot(length(temp_low) == length(temp_high))
   
   grpd_data <- tibble(date, depth, wtr) %>% 
     group_by(date)
   
-  purrr::map(seq_along(temp_low), function(i, grpd_data, temp_low, temp_high) {
+  purrr::map(seq_along(temp_low), function(i, grpd_data, temp_low, temp_high, hypso) {
     grpd_data %>% 
       summarize(Z1_Z2 = find_Z1_Z2(wtr, depth, temp_high[i], temp_low[i]), .groups = "keep") %>% 
       ungroup() %>% 
       unpack(cols = Z1_Z2) %>% 
       mutate(daily_height_in_range = Z2 - Z1,
-             # This is where volume calc will go
+             daily_volume_in_range = calc_volume(Z1, Z2, hypso),
              day_has_wtr_in_range = !is.na(daily_height_in_range)) %>% 
       summarize(!!sprintf("height_%s_%s", temp_low[i], temp_high[i]) := sum(daily_height_in_range, na.rm = TRUE),
+                !!sprintf("vol_%s_%s", temp_low[i], temp_high[i]) := sum(daily_volume_in_range, na.rm = TRUE),
                 !!sprintf("days_%s_%s", temp_low[i], temp_high[i]) := sum(day_has_wtr_in_range))
-  }, grpd_data, temp_low, temp_high) %>% 
+  }, grpd_data, temp_low, temp_high, hypso) %>% 
     bind_cols()
 
 }
@@ -468,3 +467,9 @@ unique_day <- function(date) {
   # Unique day dates only
   i_unique_day <- which(!duplicated(date))
   return(date[i_unique_day])
+
+# Needs `resample_hypso` from source("2_process/src/calculate_toha.R")
+calc_volume <- function(Z1, Z2, hypso) {
+  A1 <- resample_hypso(hypso, Z1)$areas
+  A2 <- resample_hypso(hypso, Z2)$areas
+  abs(A2-A1)*(Z2-Z1)/3
