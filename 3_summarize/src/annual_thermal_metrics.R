@@ -65,7 +65,7 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files, morphom
         gdd_wtr_0c = calc_gdd(date, wtr_surf_daily, 0),
         gdd_wtr_5c = calc_gdd(date, wtr_surf_daily, 5),
         gdd_wtr_10c = calc_gdd(date, wtr_surf_daily, 10),
-        # TODO schmidt_daily_annual_sum = schmidt_daily_annual_sum(),
+        schmidt_daily_annual_sum = schmidt_daily_annual_sum(date, depth, wtr, ice_on_date, ice_off_date, hypso),
         
         # The following section of metrics return a data.frame per summarize command and
         #   are unpacked into their real columns after using `unpack`
@@ -198,11 +198,14 @@ bottom_temp_at_strat <- function(date, wtr_bot, year, stratification_onset_yday)
 }
 
 #' @description Sum of daily Schmidt Stability values for calendar year.
-schmidt_daily_annual_sum <- function(date, wtr) {
-  # TODO: need bathymetry data to do this.
-  # See https://github.com/USGS-R/mda.lakes/blob/afb436e047d2a9ca30dfdeae13745d2ee5109455/R/necsc_thermal_metrics_core.R#L121-L123
-  # rLakeAnalyzer::ts.schmidt.stability
-  # rLakeAnalyzer::schmidt.stability
+schmidt_daily_annual_sum <- function(date, depth, wtr, ice_on_date, ice_off_date, hypso) {
+  tibble(date, depth, wtr) %>% 
+    # Only use days with open water (no ice)
+    filter(date >= ice_off_date & date <= ice_on_date) %>%
+    group_by(date) %>%
+    summarize(daily_ss = rLakeAnalyzer::schmidt.stability(wtr, depth, hypso$areas, hypso$depths), .groups = "keep") %>%
+    pull(daily_ss) %>%
+    sum(na.rm = TRUE)
 }
 
 #' @description mean, max, or min of a specific depth's temperature for a month or group of months
