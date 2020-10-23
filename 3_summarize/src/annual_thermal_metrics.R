@@ -33,9 +33,10 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files, morphom
       ungroup() %>% 
       select(-year)
     
+    site_id_for_matching <- gsub("\\}", "\\\\}", gsub("\\{", "\\\\{", site_id)) # Need to escape the special chars for grepl
     data_ready_with_flags <- data_ready %>% 
       # Read and join ice flags for this site
-      left_join(read_csv(ice_files[grepl(site_id, ice_files)]), by = "date") %>% 
+      left_join(read_csv(ice_files[grepl(site_id_for_matching, ice_files)], col_types = cols()), by = "date") %>% 
       arrange(date, depth) %>% # Data was coming in correct, but just making sure 
       # Add flag to say if the day is stratified or not. Doing this here because it will be used
       # by multiple annual metrics below.
