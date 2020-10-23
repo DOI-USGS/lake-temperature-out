@@ -66,36 +66,36 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files, morphom
         gdd_wtr_5c = calc_gdd(date, wtr_surf_daily, 5),
         gdd_wtr_10c = calc_gdd(date, wtr_surf_daily, 10),
         schmidt_daily_annual_sum = schmidt_daily_annual_sum(date, depth, wtr, ice_on_date, ice_off_date, hypso),
-        
+
         # The following section of metrics return a data.frame per summarize command and
         #   are unpacked into their real columns after using `unpack`
-        
+
         mean_surf_jas = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "mean", month_nums_to_grp = 7:9),
         max_surf_jas = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "max", month_nums_to_grp = 7:9),
         mean_bot_jas = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "mean", month_nums_to_grp = 7:9),
         max_bot_jas = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "max", month_nums_to_grp = 7:9),
-        
+
         mean_surf_mon = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "mean"),
         max_surf_mon = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "max"),
         mean_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "mean"),
         max_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "max"),
-        
+
         # Hansen metrics
         # See https://github.com/USGS-R/necsc-lake-modeling/blob/d37377ea422b9be324e8bd203fc6eecc36966401/data/habitat_metrics_table_GH.csv
 
         days_height_vol_in_range = calc_days_height_vol_within_range(date, depth, wtr, hypso,
                                                                      temp_low = c(12, 10.6, 18.2, 18, 19.3, 19, 20.6, 20, 22, 23, 25, 26.2, 26, 26, 28, 28, 29, 30),
                                                                      temp_high = c(28, 11.2, 28.2, 22, 23.3, 23, 23.2, 30, 23, 31, 29, 32, 28, 30, 29, 32, 100, 31)),
-        
+
         spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
         post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
         date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
-        
+
         .groups = "keep" # suppresses message about regrouping
       ) %>% 
       unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
                       mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
-                      date_over_temps, days_height_vol_in_range)) %>% 
+                      date_over_temps, days_height_vol_in_range)) %>%
       ungroup()
     
     message(sprintf("Completed annual metrics for %s/%s in %s min", 
@@ -469,9 +469,11 @@ unique_day <- function(date) {
   # Unique day dates only
   i_unique_day <- which(!duplicated(date))
   return(date[i_unique_day])
+}
 
 # Needs `resample_hypso` from source("2_process/src/calculate_toha.R")
 calc_volume <- function(Z1, Z2, hypso) {
   A1 <- resample_hypso(hypso, Z1)$areas
   A2 <- resample_hypso(hypso, Z2)$areas
   abs(A2-A1)*(Z2-Z1)/3
+}
