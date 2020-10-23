@@ -201,8 +201,10 @@ bottom_temp_at_strat <- function(date, wtr_bot, year, stratification_onset_yday)
 #' @description Sum of daily Schmidt Stability values for calendar year.
 schmidt_daily_annual_sum <- function(date, depth, wtr, ice_on_date, ice_off_date, hypso) {
   tibble(date, depth, wtr) %>% 
-    # Only use days with open water (no ice)
-    filter(date >= ice_off_date & date <= ice_on_date) %>%
+    # Only use days with open water (no ice) and handle situations
+    # where one of the `ice_off` or `ice_on` dates is NA
+    {if(!is.na(ice_off_date)) filter(., date >= ice_off_date) else . } %>%
+    {if(!is.na(ice_on_date)) filter(., date <= ice_on_date) else . } %>%
     group_by(date) %>%
     summarize(daily_ss = rLakeAnalyzer::schmidt.stability(wtr, depth, hypso$areas, hypso$depths), .groups = "keep") %>%
     pull(daily_ss) %>%
