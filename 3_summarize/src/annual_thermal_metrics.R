@@ -59,7 +59,7 @@ calculate_annual_metrics <- function(target_name, site_files, ice_files, morphom
         # Metrics that deal with the stratified period
         stratification_onset_yday = stratification_onset_yday(date, in_stratified_period),
         stratification_duration = stratification_duration(date, in_stratified_period),
-        sthermo_depth_mean = sthermo_depth_mean(date, depth, wtr, in_stratified_period),
+        sthermo_depth_mean = sthermo_depth_mean(date, depth, wtr, in_stratified_period, ice_on_date, ice_off_date),
         bottom_temp_at_strat = bottom_temp_at_strat(date, wtr_bot_daily, unique(year), stratification_onset_yday),
 
         gdd_wtr_0c = calc_gdd(date, wtr_surf_daily, 0),
@@ -178,12 +178,14 @@ stratification_duration <- function(date, stratified_period) {
 }
 
 #' @description avg. thermocline depth in stratified period
-sthermo_depth_mean <- function(date, depth, wtr, stratified_period) {
+sthermo_depth_mean <- function(date, depth, wtr, stratified_period, ice_on_date, ice_off_date) {
   tibble(date, depth, wtr, stratified_period) %>% 
     filter(stratified_period) %>% 
-    group_by(date) %>% 
-    summarize(daily_thermocline = rLakeAnalyzer::thermo.depth(wtr, depth), .groups = "keep") %>% 
-    pull(daily_thermocline) %>% 
+    # Only use days with open water (no ice)
+    filter(date >= ice_off_date & date <= ice_on_date) %>%
+    group_by(date) %>%
+    summarize(daily_thermocline = rLakeAnalyzer::thermo.depth(wtr[!is.na(wtr)], depth[!is.na(wtr)]), .groups = "keep") %>%
+    pull(daily_thermocline) %>%
     mean(na.rm = TRUE)
 }
 
