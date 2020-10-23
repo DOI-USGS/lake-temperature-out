@@ -317,7 +317,9 @@ calc_first_day_above_temp <- function(date, wtr_surf, temperatures) {
   wtr_surf_unique <- unique_day_data(date, wtr_surf)
   
   date_above_df <- lapply(temperatures, function(temp) {
-    date_unique[wtr_surf_unique >= temp] %>% head(1) %>% format("%j") %>% as.numeric()
+    first_day_above_temp <- date_unique[wtr_surf_unique >= temp] %>% head(1) %>% format("%j") %>% as.numeric()
+    if(length(first_day_above_temp) == 0) first_day_above_temp <- NA # Return NA if that temp was never exceeded
+    return(first_day_above_temp)
   }) %>% data.frame()
   names(date_above_df) <- sprintf("date_over_%s", temperatures)
   
