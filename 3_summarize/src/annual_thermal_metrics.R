@@ -358,10 +358,11 @@ find_wtr_at_depth <- function(wtr, depth, depth_to_find) {
 #' `force_warm` flag to either count only warm stratified periods
 #' or count both warm and cool stratified periods.
 is_stratified <- function(wtr_surface, wtr_bottom, force_warm = FALSE) {
-  # difference between top and bottom > 1 deg
+  # If either top or bottom wtr is missing, then we can't determine if it is stratified.
+  if(is.na(wtr_surface) | is.na(wtr_bottom)) return(FALSE) 
   t_diff <- wtr_surface - wtr_bottom
   if(!force_warm) t_diff <- abs(t_diff) # Count both cold and warm periods
-  t_diff >= 1
+  t_diff >= 1 # Stratified means that the difference between top and bottom > 1 deg
 }
 
 is_in_longest_consective_chunk <- function(bool_vec) {
