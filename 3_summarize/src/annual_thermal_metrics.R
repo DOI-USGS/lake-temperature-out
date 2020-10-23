@@ -425,40 +425,45 @@ get_wtr_post_ice_off <- function(date, wtr, ice_off_date, day_post_range) {
 #   a shared function to do this, so kept it separate.
 find_Z1_Z2 <- function(wtr, depth, wtr_upper_bound, wtr_lower_bound) {
   
-  z_surface <- 0
-  z_max <- max(depth) #TODO: include hypso bc max might be different than wtr depths
-  
-  if(length(unique(wtr)) == 1) {
-    # In a well-mixed lake, it is possible for all wtr values to be the same
-    # which causes approx to throw an error. Return NAs for the Zs and let
-    # checks below determine if benth area is all (or partially) above or 
-    # below the lake and set Zs based on that.
-    Z1_Z2 <- c(NA,NA)
+  if(length(unique(wtr[!is.na(wtr)])) > 1) {
+    z_surface <- 0
+    z_max <- max(depth) #TODO: include hypso bc max might be different than wtr depths
+    
+    if(length(unique(wtr)) == 1) {
+      # In a well-mixed lake, it is possible for all wtr values to be the same
+      # which causes approx to throw an error. Return NAs for the Zs and let
+      # checks below determine if benth area is all (or partially) above or 
+      # below the lake and set Zs based on that.
+      Z1_Z2 <- c(NA,NA)
+    } else {
+      # Had to explicitly add `ties=mean` to suppress warning
+      # https://community.rstudio.com/t/conditionally-interpolate-values-for-one-data-frame-based-on-another-lookup-table-per-group-solved/40922/5
+      Z1_Z2 <- approx(wtr, depth, xout=c(wtr_upper_bound, wtr_lower_bound), ties=mean)$y
+    }
+    
+    Z1 <- Z1_Z2[1]
+    Z2 <- Z1_Z2[2]
+    
+    wtr_surface <- wtr[which.min(depth)] # wtr_surface will be whatever the top-most wtr is
+    wtr_bottom <- wtr[which.max(depth)] # wtr_bottom will be whatever the bottom-most wtr is
+    
+    # Adjust thermal range depths based on a few different edge-case scenarios
+    
+    completely_below_lake <- wtr_bottom > wtr_upper_bound # if THA is completely below lake, benthic area is 0 (too hot)
+    completely_above_lake <- wtr_surface < wtr_lower_bound # if THA is completely above lake, benthic area is 0 (too cold)
+    
+    # if THA extends above lake, use the surface as Z1 to calc THA
+    extends_above_lake <- wtr_surface < wtr_upper_bound & !completely_above_lake
+    Z1[extends_above_lake] <- z_surface
+    
+    # if THA extends below lake, use the bottom as Z2 to calc THA
+    extends_below_lake <- wtr_bottom > wtr_lower_bound & !completely_below_lake
+    Z2[extends_below_lake] <- z_max
   } else {
-    # Had to explicitly add `ties=mean` to suppress warning
-    # https://community.rstudio.com/t/conditionally-interpolate-values-for-one-data-frame-based-on-another-lookup-table-per-group-solved/40922/5
-    Z1_Z2 <- approx(wtr, depth, xout=c(wtr_upper_bound, wtr_lower_bound), ties=mean)$y
+    # If there is only one non-NA wtr, then we can't figure out where Z1 and Z2 would be
+    Z1 <- NA
+    Z2 <- NA
   }
-  
-  Z1 <- Z1_Z2[1]
-  Z2 <- Z1_Z2[2]
-  
-  wtr_surface <- wtr[which.min(depth)] # wtr_surface will be whatever the top-most wtr is
-  wtr_bottom <- wtr[which.max(depth)] # wtr_bottom will be whatever the bottom-most wtr is
-  
-  # Adjust thermal range depths based on a few different edge-case scenarios
-  
-  completely_below_lake <- wtr_bottom > wtr_upper_bound # if THA is completely below lake, benthic area is 0 (too hot)
-  completely_above_lake <- wtr_surface < wtr_lower_bound # if THA is completely above lake, benthic area is 0 (too cold)
-  
-  # if THA extends above lake, use the surface as Z1 to calc THA
-  extends_above_lake <- wtr_surface < wtr_upper_bound & !completely_above_lake
-  Z1[extends_above_lake] <- z_surface
-  
-  # if THA extends below lake, use the bottom as Z2 to calc THA
-  extends_below_lake <- wtr_bottom > wtr_lower_bound & !completely_below_lake
-  Z2[extends_below_lake] <- z_max
-  
   return(tibble(Z1 = Z1, Z2 = Z2))
 }
 
