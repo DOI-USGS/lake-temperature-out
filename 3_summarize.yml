@@ -61,7 +61,7 @@ targets:
   3_summarize/out/annual_metrics_pgdl.csv:
     command: do_annual_metrics_multi_lake(
       final_target = target_name,
-      site_files = test_files2,
+      site_files = pgdl_site_files,
       ice_files = ice_files,
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
@@ -71,7 +71,7 @@ targets:
   3_summarize/out/annual_metrics_pb0.csv:
     command: do_annual_metrics_multi_lake(
       final_target = target_name,
-      site_files = test_files,
+      site_files = pb0_site_files,
       ice_files = ice_files,
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
