@@ -1,113 +1,105 @@
 
-calculate_annual_metrics <- function(target_name, site_files, ice_files, morphometry) {
+calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morphometry) {
   
-  purrr::map(site_files, function(fn) {
-    start_tm <- Sys.time()
+  start_tm <- Sys.time()
     
-    data_ready <- read_feather(fn) %>% 
-      select(site_id, date = DateTime, starts_with("temp_")) %>% 
-      pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
-      mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
-      mutate(year = as.numeric(format(date, "%Y")))
-    
-    # Get hypso for this site
-    site_id <- unique(data_ready$site_id)
-    morphometry_site <- morphometry[[site_id]]
-    hypso <- data.frame(H = morphometry_site$H, A = morphometry_site$A) %>% 
-      mutate(depths = max(H) - H, areas = A) %>% 
-      arrange(depths) %>% 
-      select(depths, areas)
-    
-    data_stratification <- data_ready %>% 
-      group_by(date) %>% 
-      summarize(wtr_surf_daily = wtr[depth == 0],
-                wtr_bot_daily = find_wtr_at_depth(wtr, depth, calc_lake_bottom(depth)),
-                .groups = "keep") %>% 
-      mutate(stratified = is_stratified(wtr_surf_daily, wtr_bot_daily, force_warm = TRUE)) %>% 
-      ungroup() %>% 
-      # Add year back in because it is dropped in `group_by` above
-      mutate(year = as.numeric(format(date, "%Y"))) %>% 
-      group_by(year) %>% 
-      # For each year, add a column to say whether a day is within the longest chunk of consecutive stratified days
-      mutate(in_stratified_period = is_in_longest_consective_chunk(stratified)) %>% 
-      ungroup() %>% 
-      select(-year)
-    
-    site_id_for_matching <- gsub("\\}", "\\\\}", gsub("\\{", "\\\\{", site_id)) # Need to escape the special chars for grepl
-    data_ready_with_flags <- data_ready %>% 
-      # Read and join ice flags for this site
-      left_join(read_csv(ice_files[grepl(site_id_for_matching, ice_files)], col_types = cols()), by = "date") %>% 
-      arrange(date, depth) %>% # Data was coming in correct, but just making sure 
-      # Add flag to say if the day is stratified or not. Doing this here because it will be used
-      # by multiple annual metrics below.
-      left_join(data_stratification, by = "date") # these were calculated by day and by adding into a long format data set, they will be duplicated
-    
-    annual_metrics <- data_ready_with_flags %>%
-      group_by(site_id, year) %>% 
-      summarize(
-        
-        # Maximum observed surface temperature & corresponding date
-        peak_temp = max(wtr_surf_daily, na.rm = TRUE),
-        peak_temp_dt = date[which.max(wtr_surf_daily)],
-        
-        ice_on_date = get_ice_onoff(date, ice, peak_temp_dt, "on"),
-        ice_off_date = get_ice_onoff(date, ice, peak_temp_dt, "off"),
-        
-        winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
-        coef_var_31_60 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(31,60)),
-        coef_var_1_30 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(1,30)),
-        
-        # Metrics that deal with the stratified period
-        stratification_onset_yday = stratification_onset_yday(date, in_stratified_period),
-        stratification_duration = stratification_duration(date, in_stratified_period),
-        sthermo_depth_mean = sthermo_depth_mean(date, depth, wtr, in_stratified_period, ice_on_date, ice_off_date),
-        bottom_temp_at_strat = bottom_temp_at_strat(date, wtr_bot_daily, unique(year), stratification_onset_yday),
-
-        gdd_wtr_0c = calc_gdd(date, wtr_surf_daily, 0),
-        gdd_wtr_5c = calc_gdd(date, wtr_surf_daily, 5),
-        gdd_wtr_10c = calc_gdd(date, wtr_surf_daily, 10),
-        schmidt_daily_annual_sum = schmidt_daily_annual_sum(date, depth, wtr, ice_on_date, ice_off_date, hypso),
-
-        # The following section of metrics return a data.frame per summarize command and
-        #   are unpacked into their real columns after using `unpack`
-
-        mean_surf_jas = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "mean", month_nums_to_grp = 7:9),
-        max_surf_jas = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "max", month_nums_to_grp = 7:9),
-        mean_bot_jas = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "mean", month_nums_to_grp = 7:9),
-        max_bot_jas = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "max", month_nums_to_grp = 7:9),
-
-        mean_surf_mon = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "mean"),
-        max_surf_mon = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "max"),
-        mean_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "mean"),
-        max_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "max"),
-
-        # Hansen metrics
-        # See https://github.com/USGS-R/necsc-lake-modeling/blob/d37377ea422b9be324e8bd203fc6eecc36966401/data/habitat_metrics_table_GH.csv
-
-        days_height_vol_in_range = calc_days_height_vol_within_range(date, depth, wtr, hypso,
-                                                                     temp_low = c(12, 10.6, 18.2, 18, 19.3, 19, 20.6, 20, 22, 23, 25, 26.2, 26, 26, 28, 28, 29, 30),
-                                                                     temp_high = c(28, 11.2, 28.2, 22, 23.3, 23, 23.2, 30, 23, 31, 29, 32, 28, 30, 29, 32, 100, 31)),
-
-        spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
-        post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
-        date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
-
-        .groups = "keep" # suppresses message about regrouping
-      ) %>% 
-      unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
-                      mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
-                      date_over_temps, days_height_vol_in_range)) %>%
-      ungroup()
-    
-    message(sprintf("Completed annual metrics for %s/%s in %s min", 
-                    which(site_files == fn), length(site_files), 
-                    round(as.numeric(Sys.time() - start_tm, units = "mins"), 2)))
-    
-    return(annual_metrics)
-  }) %>% 
-    bind_rows() %>% 
-    readr::write_csv(target_name)
+  data_ready <- read_feather(site_file) %>% 
+    select(site_id, date = DateTime, starts_with("temp_")) %>% 
+    pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
+    mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
+    mutate(year = as.numeric(format(date, "%Y")))
   
+  # Get hypso for this site
+  hypso <- data.frame(H = morphometry$H, A = morphometry$A) %>% 
+    mutate(depths = max(H) - H, areas = A) %>% 
+    arrange(depths) %>% 
+    select(depths, areas)
+  
+  data_stratification <- data_ready %>% 
+    group_by(date) %>% 
+    summarize(wtr_surf_daily = wtr[depth == 0],
+              wtr_bot_daily = find_wtr_at_depth(wtr, depth, calc_lake_bottom(depth)),
+              .groups = "keep") %>% 
+    mutate(stratified = is_stratified(wtr_surf_daily, wtr_bot_daily, force_warm = TRUE)) %>% 
+    ungroup() %>% 
+    # Add year back in because it is dropped in `group_by` above
+    mutate(year = as.numeric(format(date, "%Y"))) %>% 
+    group_by(year) %>% 
+    # For each year, add a column to say whether a day is within the longest chunk of consecutive stratified days
+    mutate(in_stratified_period = is_in_longest_consective_chunk(stratified)) %>% 
+    ungroup() %>% 
+    select(-year)
+  
+  data_ready_with_flags <- data_ready %>% 
+    # Read and join ice flags for this site
+    left_join(read_csv(ice_file, col_types = cols()), by = "date") %>% 
+    arrange(date, depth) %>% # Data was coming in correct, but just making sure 
+    # Add flag to say if the day is stratified or not. Doing this here because it will be used
+    # by multiple annual metrics below.
+    left_join(data_stratification, by = "date") # these were calculated by day and by adding into a long format data set, they will be duplicated
+  
+  annual_metrics <- data_ready_with_flags %>%
+    group_by(site_id, year) %>% 
+    summarize(
+      
+      # Maximum observed surface temperature & corresponding date
+      peak_temp = max(wtr_surf_daily, na.rm = TRUE),
+      peak_temp_dt = date[which.max(wtr_surf_daily)],
+      
+      ice_on_date = get_ice_onoff(date, ice, peak_temp_dt, "on"),
+      ice_off_date = get_ice_onoff(date, ice, peak_temp_dt, "off"),
+      
+      winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
+      coef_var_31_60 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(31,60)),
+      coef_var_1_30 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(1,30)),
+      
+      # Metrics that deal with the stratified period
+      stratification_onset_yday = stratification_onset_yday(date, in_stratified_period),
+      stratification_duration = stratification_duration(date, in_stratified_period),
+      sthermo_depth_mean = sthermo_depth_mean(date, depth, wtr, in_stratified_period, ice_on_date, ice_off_date),
+      bottom_temp_at_strat = bottom_temp_at_strat(date, wtr_bot_daily, unique(year), stratification_onset_yday),
+
+      gdd_wtr_0c = calc_gdd(date, wtr_surf_daily, 0),
+      gdd_wtr_5c = calc_gdd(date, wtr_surf_daily, 5),
+      gdd_wtr_10c = calc_gdd(date, wtr_surf_daily, 10),
+      schmidt_daily_annual_sum = schmidt_daily_annual_sum(date, depth, wtr, ice_on_date, ice_off_date, hypso),
+
+      # The following section of metrics return a data.frame per summarize command and
+      #   are unpacked into their real columns after using `unpack`
+
+      mean_surf_jas = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "mean", month_nums_to_grp = 7:9),
+      max_surf_jas = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "max", month_nums_to_grp = 7:9),
+      mean_bot_jas = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "mean", month_nums_to_grp = 7:9),
+      max_bot_jas = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "max", month_nums_to_grp = 7:9),
+
+      mean_surf_mon = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "mean"),
+      max_surf_mon = calc_monthly_summary_stat(date, wtr_surf_daily, "surf", "max"),
+      mean_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "mean"),
+      max_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "max"),
+
+      # Hansen metrics
+      # See https://github.com/USGS-R/necsc-lake-modeling/blob/d37377ea422b9be324e8bd203fc6eecc36966401/data/habitat_metrics_table_GH.csv
+
+      days_height_vol_in_range = calc_days_height_vol_within_range(date, depth, wtr, hypso,
+                                                                   temp_low = c(12, 10.6, 18.2, 18, 19.3, 19, 20.6, 20, 22, 23, 25, 26.2, 26, 26, 28, 28, 29, 30),
+                                                                   temp_high = c(28, 11.2, 28.2, 22, 23.3, 23, 23.2, 30, 23, 31, 29, 32, 28, 30, 29, 32, 100, 31)),
+
+      spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
+      post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
+      date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
+
+      .groups = "keep" # suppresses message about regrouping
+    ) %>% 
+    unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
+                    mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
+                    date_over_temps, days_height_vol_in_range)) %>%
+    ungroup()
+  
+  message(sprintf("Completed annual metrics for %s in %s min", site_id, 
+                  round(as.numeric(Sys.time() - start_tm, units = "mins"), 2)))
+  
+  return(annual_metrics)
+
 }
 
 get_filenames_from_ind <- function(ind_file) {
