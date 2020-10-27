@@ -36,7 +36,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, ..
                "site_id = I('%s')," = task_name,
                "site_file = '%s'," = task_info$wtr_filename,
                "ice_file = '%s'," = task_info$ice_filename,
-               "morphometry = %s)" = steps[["split_morphometry"]]$target_name
+               "morphometry = `%s`)" = steps[["split_morphometry"]]$target_name
       )
     }
   )
