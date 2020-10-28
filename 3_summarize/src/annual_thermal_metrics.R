@@ -9,10 +9,7 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
     mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
     mutate(year = as.numeric(format(date, "%Y")))
   
-  if(nrow(data_ready) == 0) {
-    message(sprintf("Skipping annual metrics for %s because there is no wtr data", site_id))
-    return(data.frame())
-  }
+  stopifnot(nrow(data_ready) > 0) # There should be data for each site file
   
   # Get hypso for this site
   hypso <- data.frame(H = morphometry$H, A = morphometry$A) %>% 
