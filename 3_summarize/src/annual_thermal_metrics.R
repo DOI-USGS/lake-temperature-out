@@ -89,14 +89,18 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
       spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
       post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
       date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
-
+      
       simulation_length_days = calc_n_days(date, wtr),
+
+      # This doesn't change per timestep because the water levels aren't time varying, so just
+      # using hypso which means they should be the same for every year. Returns mean and sum vols
+      volume_X_m_3 = calc_volume_X_m_3(hypso),
       
       .groups = "keep" # suppresses message about regrouping
     ) %>% 
     unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
                     mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
-                    date_over_temps, days_height_vol_in_range)) %>%
+                    date_over_temps, days_height_vol_in_range, volume_X_m_3)) %>%
     ungroup()
   
   message(sprintf("Completed annual metrics for %s in %s min", site_id, 
@@ -329,7 +333,6 @@ calc_first_day_above_temp <- function(date, wtr_surf, temperatures) {
   
   return(date_above_df)
 }
-
 calc_n_days <- function(date, wtr) {
   # count days that have at least one non-NA value
   tibble(date, wtr) %>% 
@@ -337,6 +340,12 @@ calc_n_days <- function(date, wtr) {
     summarize(data_exists = any(!is.na(wtr))) %>% 
     pull(data_exists) %>% 
     sum() 
+}
+
+calc_volume_X_m_3 <- function(hypso) {
+  slice_vols <- calc_volume(head(hypso$depths, -1), tail(hypso$depths, -1), hypso)
+  tibble(volume_mean_m_3 = mean(slice_vols, na.rm = TRUE), 
+         volume_sum_m_3 = sum(slice_vols, na.rm = TRUE))
 }
 
 ## Helper functions for the above
