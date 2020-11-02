@@ -361,7 +361,9 @@ calc_metalimnion_derivatives <- function(date, depth, wtr, stratified_period, st
                 mean_hyp_vol = mean(hyp_vol, na.rm = TRUE)) %>% 
       mutate(mean_epi_hypo_ratio = mean_epi_vol / mean_hyp_vol)
   } else {
-    return(NA) # If the stratified period is < 30 days, return NA
+    # If the stratified period is < 30 days, return NA
+    return(tibble(SmetaTopD_mean = NA, SmetaBotD_mean = NA, mean_epi_vol = NA, 
+                  mean_hyp_vol = NA, mean_epi_hypo_ratio = NA)) 
   }
   
 }
