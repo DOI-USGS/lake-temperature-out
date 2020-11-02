@@ -89,14 +89,14 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
       spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
       post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
       date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
-      
+      metalimnion_derivatives = calc_metalimnion_derivatives(date, depth, wtr, in_stratified_period, stratification_duration, hypso),
       simulation_length_days = calc_n_days(date, wtr),
       
       .groups = "keep" # suppresses message about regrouping
     ) %>% 
     unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
                     mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
-                    date_over_temps, days_height_vol_in_range)) %>%
+                    date_over_temps, days_height_vol_in_range, metalimnion_derivatives)) %>%
     ungroup()
   
   message(sprintf("Completed annual metrics for %s in %s min", site_id, 
@@ -336,6 +336,34 @@ calc_n_days <- function(date, wtr) {
     summarize(data_exists = any(!is.na(wtr))) %>% 
     pull(data_exists) %>% 
     sum() 
+}
+
+#' @description Calculates the top and bottom depths of the metalimnion in a stratified lake in order
+#' to determine the annual mean metalimnion top and bottom depths, the annual mean volume of the epilimnion,
+#' and the annual mean volume of the hypolimnion. Uses the rLakeAnalyzer function, meta.depths
+calc_metalimnion_derivatives <- function(date, depth, wtr, stratified_period, strat_duration, hypso) {
+  
+  if(unique(strat_duration) >= 30) {
+    # Only return results if the stratification duration is at least 30 days
+    tibble(date, depth, wtr, stratified_period) %>%
+      group_by(date) %>%
+      summarize(daily_metalimnion = paste(rLakeAnalyzer::meta.depths(wtr[!is.na(wtr)], depth[!is.na(wtr)]), collapse="_"), 
+                stratified = unique(stratified_period), .groups = "keep") %>% 
+      ungroup() %>% 
+      separate(daily_metalimnion, into = c("meta_top", "meta_bottom"), sep="_") %>% 
+      mutate(meta_top = as.numeric(meta_top), meta_bottom = as.numeric(meta_bottom)) %>% 
+      mutate(epi_vol = calc_volume(0, meta_top, hypso)) %>% # Volume of layer above the metalimnion to the surface
+      mutate(hyp_vol = calc_volume(meta_bottom, max(hypso$depths), hypso)) %>% # Volume of layer below the metalimnion to the bottom
+      filter(stratified) %>% 
+      summarize(SmetaTopD_mean = mean(meta_top, na.rm = TRUE),
+                SmetaBotD_mean = mean(meta_bottom, na.rm = TRUE),
+                mean_epi_vol = mean(epi_vol, na.rm = TRUE),
+                mean_hyp_vol = mean(hyp_vol, na.rm = TRUE)) %>% 
+      mutate(mean_epi_hypo_ratio = mean_epi_vol / mean_hyp_vol)
+  } else {
+    return(NA) # If the stratified period is < 30 days, return NA
+  }
+  
 }
 
 ## Helper functions for the above
