@@ -90,6 +90,8 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
       post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
       date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
 
+      simulation_length_days = calc_n_days(date, wtr),
+      
       .groups = "keep" # suppresses message about regrouping
     ) %>% 
     unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
@@ -326,6 +328,15 @@ calc_first_day_above_temp <- function(date, wtr_surf, temperatures) {
   names(date_above_df) <- sprintf("date_over_%s", temperatures)
   
   return(date_above_df)
+}
+
+calc_n_days <- function(date, wtr) {
+  # count days that have at least one non-NA value
+  tibble(date, wtr) %>% 
+    group_by(date) %>% 
+    summarize(data_exists = any(!is.na(wtr))) %>% 
+    pull(data_exists) %>% 
+    sum() 
 }
 
 ## Helper functions for the above
