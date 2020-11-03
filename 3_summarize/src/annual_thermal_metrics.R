@@ -9,6 +9,8 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
     mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
     mutate(year = as.numeric(format(date, "%Y")))
   
+  stopifnot(nrow(data_ready) > 0) # There should be data for each site file
+  
   # Get hypso for this site
   hypso <- data.frame(H = morphometry$H, A = morphometry$A) %>% 
     mutate(depths = max(H) - H, areas = A) %>% 
@@ -45,18 +47,18 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
       # Maximum observed surface temperature & corresponding date
       peak_temp = max(wtr_surf_daily, na.rm = TRUE),
       peak_temp_dt = date[which.max(wtr_surf_daily)],
-      
+
       ice_on_date = get_ice_onoff(date, ice, peak_temp_dt, "on"),
       ice_off_date = get_ice_onoff(date, ice, peak_temp_dt, "off"),
-      
+
       winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
       coef_var_31_60 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(31,60)),
       coef_var_1_30 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(1,30)),
-      
+
       # Metrics that deal with the stratified period
       stratification_onset_yday = stratification_onset_yday(date, in_stratified_period),
       stratification_duration = stratification_duration(date, in_stratified_period),
-      sthermo_depth_mean = sthermo_depth_mean(date, depth, wtr, in_stratified_period, ice_on_date, ice_off_date),
+      sthermo_depth_mean = sthermo_depth_mean(date, depth, wtr, in_stratified_period, stratification_duration),
       bottom_temp_at_strat = bottom_temp_at_strat(date, wtr_bot_daily, unique(year), stratification_onset_yday),
 
       gdd_wtr_0c = calc_gdd(date, wtr_surf_daily, 0),
@@ -87,12 +89,14 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
       spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
       post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
       date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
-
+      metalimnion_derivatives = calc_metalimnion_derivatives(date, depth, wtr, in_stratified_period, stratification_duration, hypso),
+      simulation_length_days = calc_n_days(date, wtr),
+      
       .groups = "keep" # suppresses message about regrouping
     ) %>% 
     unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
                     mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
-                    date_over_temps, days_height_vol_in_range)) %>%
+                    date_over_temps, days_height_vol_in_range, metalimnion_derivatives)) %>%
     ungroup()
   
   message(sprintf("Completed annual metrics for %s in %s min", site_id, 
@@ -170,16 +174,24 @@ stratification_duration <- function(date, stratified_period) {
   sum(strat_unique) # count how many are in the longest stratified chunk
 }
 
-#' @description avg. thermocline depth in stratified period
-sthermo_depth_mean <- function(date, depth, wtr, stratified_period, ice_on_date, ice_off_date) {
-  tibble(date, depth, wtr, stratified_period) %>% 
-    filter(stratified_period) %>% 
-    # Only use days with open water (no ice)
-    filter(date >= ice_off_date & date <= ice_on_date) %>%
-    group_by(date) %>%
-    summarize(daily_thermocline = rLakeAnalyzer::thermo.depth(wtr[!is.na(wtr)], depth[!is.na(wtr)]), .groups = "keep") %>%
-    pull(daily_thermocline) %>%
-    mean(na.rm = TRUE)
+#' @description avg. thermocline depth in stratified period that is >= 30 days
+#' `strat_duration` has one value per year, so there should only be one unique value going in
+sthermo_depth_mean <- function(date, depth, wtr, stratified_period, strat_duration, strat_dur_min = 30) {
+  
+  if(unique(strat_duration) >= 30) {
+    # Only return results if the stratification duration is at least 30 days
+    tibble(date, depth, wtr, stratified_period) %>%
+      group_by(date) %>%
+      summarize(daily_thermocline = rLakeAnalyzer::thermo.depth(wtr[!is.na(wtr)], depth[!is.na(wtr)]), .groups = "keep", 
+                stratified = unique(stratified_period)) %>% 
+      ungroup() %>% 
+      filter(stratified) %>% 
+      pull(daily_thermocline) %>%
+      mean(na.rm = TRUE)
+  } else {
+    return(NA) # If the stratified period is < 30 days, return NA
+  }
+  
 }
 
 #' @description water temperature 0.1m from lake bottom on day of 
@@ -317,6 +329,44 @@ calc_first_day_above_temp <- function(date, wtr_surf, temperatures) {
   
   return(date_above_df)
 }
+calc_n_days <- function(date, wtr) {
+  # count days that have at least one non-NA value
+  tibble(date, wtr) %>% 
+    group_by(date) %>% 
+    summarize(data_exists = any(!is.na(wtr))) %>% 
+    pull(data_exists) %>% 
+    sum() 
+}
+
+#' @description Calculates the top and bottom depths of the metalimnion in a stratified lake in order
+#' to determine the annual mean metalimnion top and bottom depths, the annual mean volume of the epilimnion,
+#' and the annual mean volume of the hypolimnion. Uses the rLakeAnalyzer function, meta.depths
+calc_metalimnion_derivatives <- function(date, depth, wtr, stratified_period, strat_duration, hypso) {
+  
+  if(unique(strat_duration) >= 30) {
+    # Only return results if the stratification duration is at least 30 days
+    tibble(date, depth, wtr, stratified_period) %>%
+      group_by(date) %>%
+      summarize(daily_metalimnion = paste(rLakeAnalyzer::meta.depths(wtr[!is.na(wtr)], depth[!is.na(wtr)]), collapse="_"), 
+                stratified = unique(stratified_period), .groups = "keep") %>% 
+      ungroup() %>% 
+      separate(daily_metalimnion, into = c("meta_top", "meta_bottom"), sep="_") %>% 
+      mutate(meta_top = as.numeric(meta_top), meta_bottom = as.numeric(meta_bottom)) %>% 
+      mutate(epi_vol = calc_volume(0, meta_top, hypso)) %>% # Volume of layer above the metalimnion to the surface
+      mutate(hyp_vol = calc_volume(meta_bottom, max(hypso$depths), hypso)) %>% # Volume of layer below the metalimnion to the bottom
+      filter(stratified) %>% 
+      summarize(SmetaTopD_mean = mean(meta_top, na.rm = TRUE),
+                SmetaBotD_mean = mean(meta_bottom, na.rm = TRUE),
+                mean_epi_vol = mean(epi_vol, na.rm = TRUE),
+                mean_hyp_vol = mean(hyp_vol, na.rm = TRUE)) %>% 
+      mutate(mean_epi_hypo_ratio = mean_epi_vol / mean_hyp_vol)
+  } else {
+    # If the stratified period is < 30 days, return NA
+    return(tibble(SmetaTopD_mean = NA, SmetaBotD_mean = NA, mean_epi_vol = NA, 
+                  mean_hyp_vol = NA, mean_epi_hypo_ratio = NA)) 
+  }
+  
+}
 
 ## Helper functions for the above
 
@@ -324,8 +374,6 @@ get_last_years_data <- function(this_year, dat_all) {
   dat_all %>% 
     filter(year == this_year - 1)
 }
-
-
 
 #' @description Cumulative sum of degrees >base degrees for entire year
 calc_gdd <- function(date, wtr, base = 0) {
@@ -342,7 +390,14 @@ calc_lake_bottom <- function(depth) {
 # Doesn't consider dates at all
 # Assumes linear interpolation for depth-wtr relationship
 find_wtr_at_depth <- function(wtr, depth, depth_to_find) {
-  approx(depth, wtr, depth_to_find)$y
+  if(length(na.omit(wtr)) > 1) {
+    # Can only linearly interpolate if there are at least 2 values to use
+    # Otherwise, this throws an error. Will still return NA if the depth value
+    # to find is outside of the values available.
+    approx(depth, wtr, depth_to_find)$y
+  } else {
+    return(NA)
+  }
 }
 
 #' @description Determines if a day is stratified by comparing the
