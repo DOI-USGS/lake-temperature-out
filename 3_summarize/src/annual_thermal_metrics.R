@@ -390,7 +390,14 @@ calc_lake_bottom <- function(depth) {
 # Doesn't consider dates at all
 # Assumes linear interpolation for depth-wtr relationship
 find_wtr_at_depth <- function(wtr, depth, depth_to_find) {
-  approx(depth, wtr, depth_to_find)$y
+  if(length(na.omit(wtr)) > 1) {
+    # Can only linearly interpolate if there are at least 2 values to use
+    # Otherwise, this throws an error. Will still return NA if the depth value
+    # to find is outside of the values available.
+    approx(depth, wtr, depth_to_find)$y
+  } else {
+    return(NA)
+  }
 }
 
 #' @description Determines if a day is stratified by comparing the
