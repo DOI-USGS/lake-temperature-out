@@ -59,7 +59,7 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
       stratification_onset_yday = stratification_onset_yday(date, in_stratified_period),
       stratification_duration = stratification_duration(date, in_stratified_period),
       sthermo_depth_mean = sthermo_depth_mean(date, depth, wtr, in_stratified_period, stratification_duration),
-      bottom_temp_at_strat = bottom_temp_at_strat(date, wtr_bot_daily, unique(year), stratification_onset_yday),
+      bottom_temp_at_strat = bottom_temp_at_strat(date, wtr_bot_daily, unique(year), stratification_onset_yday, stratification_duration),
 
       gdd_wtr_0c = calc_gdd(date, wtr_surf_daily, 0),
       gdd_wtr_5c = calc_gdd(date, wtr_surf_daily, 5),
@@ -178,7 +178,7 @@ stratification_duration <- function(date, stratified_period) {
 #' `strat_duration` has one value per year, so there should only be one unique value going in
 sthermo_depth_mean <- function(date, depth, wtr, stratified_period, strat_duration, strat_dur_min = 30) {
   
-  if(unique(strat_duration) >= 30) {
+  if(unique(strat_duration) >= strat_dur_min) {
     # Only return results if the stratification duration is at least 30 days
     tibble(date, depth, wtr, stratified_period) %>%
       group_by(date) %>%
@@ -196,10 +196,14 @@ sthermo_depth_mean <- function(date, depth, wtr, stratified_period, strat_durati
 
 #' @description water temperature 0.1m from lake bottom on day of 
 #' stratification (as defined in original stratification measure)
-bottom_temp_at_strat <- function(date, wtr_bot, year, stratification_onset_yday) {
-  date_strat_onset <- as.Date(stratification_onset_yday-1, origin = sprintf("%s-01-01", year))
-  i_strat_onset <- which(date == date_strat_onset)
-  unique(wtr_bot[i_strat_onset])
+bottom_temp_at_strat <- function(date, wtr_bot, year, stratification_onset_yday, strat_duration, strat_dur_min = 30) {
+  if(unique(strat_duration) >= strat_dur_min) {
+    date_strat_onset <- as.Date(stratification_onset_yday-1, origin = sprintf("%s-01-01", year))
+    i_strat_onset <- which(date == date_strat_onset)
+    unique(wtr_bot[i_strat_onset])
+  } else {
+    return(NA) # If the stratified period is < 30 days, return NA
+  }
 }
 
 #' @description Sum of daily Schmidt Stability values for calendar year.
