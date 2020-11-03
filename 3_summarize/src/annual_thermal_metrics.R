@@ -17,13 +17,15 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
     arrange(depths) %>% 
     select(depths, areas)
   
-  data_stratification <- data_ready %>% 
+  data_stratification_ice <- data_ready %>% 
     group_by(date) %>% 
     summarize(wtr_surf_daily = wtr[depth == 0],
               wtr_bot_daily = find_wtr_at_depth(wtr, depth, calc_lake_bottom(depth)),
               .groups = "keep") %>% 
-    mutate(stratified = is_stratified(wtr_surf_daily, wtr_bot_daily, force_warm = TRUE)) %>% 
     ungroup() %>% 
+    # Read and join ice flags for this site (can join here because there is only one per day)
+    left_join(read_csv(ice_file, col_types = cols()), by = "date") %>% 
+    mutate(stratified = is_stratified(wtr_surf_daily, wtr_bot_daily, ice, force_warm = TRUE)) %>% 
     # Add year back in because it is dropped in `group_by` above
     mutate(year = as.numeric(format(date, "%Y"))) %>% 
     group_by(year) %>% 
@@ -33,12 +35,11 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
     select(-year)
   
   data_ready_with_flags <- data_ready %>% 
-    # Read and join ice flags for this site
-    left_join(read_csv(ice_file, col_types = cols()), by = "date") %>% 
     arrange(date, depth) %>% # Data was coming in correct, but just making sure 
-    # Add flag to say if the day is stratified or not. Doing this here because it will be used
-    # by multiple annual metrics below.
-    left_join(data_stratification, by = "date") # these were calculated by day and by adding into a long format data set, they will be duplicated
+    # Add flag to say if the day is stratified or not + one for ice. Doing this here because it will be used
+    # by multiple annual metrics below and these were calculated as per day metrics, but need
+    # to be joined to the per day per depth format of `data_ready`
+    left_join(data_stratification_ice, by = "date") # these were calculated by day and by adding into a long format data set, they will be duplicated
   
   annual_metrics <- data_ready_with_flags %>%
     group_by(site_id, year) %>% 
@@ -408,12 +409,19 @@ find_wtr_at_depth <- function(wtr, depth, depth_to_find) {
 #' difference between the surface and bottom temperatures. Uses the
 #' `force_warm` flag to either count only warm stratified periods
 #' or count both warm and cool stratified periods.
-is_stratified <- function(wtr_surface, wtr_bottom, force_warm = FALSE) {
-  # If either top or bottom wtr is missing, then we can't determine if it is stratified.
-  if(is.na(wtr_surface) | is.na(wtr_bottom)) return(FALSE) 
+is_stratified <- function(wtr_surface, wtr_bottom, ice, force_warm = FALSE) {
+  
   t_diff <- wtr_surface - wtr_bottom
   if(!force_warm) t_diff <- abs(t_diff) # Count both cold and warm periods
-  t_diff >= 1 # Stratified means that the difference between top and bottom > 1 deg
+  
+  # Stratified means that the difference between top and bottom > 1 deg
+  # Also, cannot be considered stratified if there is ice
+  stratified <- t_diff >= 1 & !ice 
+  
+  # If either top or bottom wtr is missing, then we can't determine if it is stratified.
+  stratified[is.na(wtr_surface) | is.na(wtr_bottom)] <- FALSE
+  
+  return(stratified)
 }
 
 is_in_longest_consective_chunk <- function(bool_vec) {
