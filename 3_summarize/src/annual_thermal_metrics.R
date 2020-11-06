@@ -472,7 +472,7 @@ get_ice_onoff <- function(date, ice, peak_temp_dt, on_or_off) {
 }
 
 get_wtr_post_ice_off <- function(date, wtr, ice_off_date, day_post_range) {
-  wtr[date >= ice_off_date + day_post_range[1] & date <= ice_off_date + day_post_range[2]]
+  wtr[date >= ice_off_date + day_post_range[1]-1 & date <= ice_off_date + day_post_range[2]-1]
 }
 
 # This is based on the code in calculate_toha, but it was challenging to create
