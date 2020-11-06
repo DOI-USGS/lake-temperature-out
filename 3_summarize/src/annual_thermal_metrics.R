@@ -394,7 +394,14 @@ find_wtr_at_depth <- function(wtr, depth, depth_to_find) {
     # Can only linearly interpolate if there are at least 2 values to use
     # Otherwise, this throws an error. Will still return NA if the depth value
     # to find is outside of the values available.
-    approx(depth, wtr, depth_to_find)$y
+    
+    wtr_at_depth <- approx(depth, wtr, depth_to_find)$y
+    
+    # If the values at the bottom are NA, use the bottom-most non-NA wtr value instead
+    if(is.na(wtr_at_depth)) {
+      wtr_at_depth <- wtr[depth == max(depth[!is.na(wtr)])]
+    }
+    return(wtr_at_depth)
   } else {
     return(NA)
   }
