@@ -215,7 +215,7 @@ schmidt_daily_annual_sum <- function(date, depth, wtr, ice_on_date, ice_off_date
     {if(!is.na(ice_off_date)) filter(., date >= ice_off_date) else . } %>%
     {if(!is.na(ice_on_date)) filter(., date <= ice_on_date) else . } %>%
     group_by(date) %>%
-    summarize(daily_ss = rLakeAnalyzer::schmidt.stability(wtr, depth, hypso$areas, hypso$depths), .groups = "keep") %>%
+    summarize(daily_ss = rLakeAnalyzer::schmidt.stability(wtr[!is.na(wtr)], depth[!is.na(wtr)], hypso$areas, hypso$depths), .groups = "keep") %>%
     pull(daily_ss) %>%
     sum(na.rm = TRUE)
 }
