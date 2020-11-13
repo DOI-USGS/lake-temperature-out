@@ -1,8 +1,14 @@
+# R project info
 .Rproj.user
 .Rhistory
 .RData
+
+# user-specific info
 .Ruserdata
 .httr-oauth
+
+# R library on Yeti
+Rlib_3_6/
 
 # scipiper-specific files and folders
 */tmp/*
@@ -13,3 +19,6 @@
 .remake
 *_tasks.yml
 */status/*
+
+# jupyter notebooks
+*.ipynb

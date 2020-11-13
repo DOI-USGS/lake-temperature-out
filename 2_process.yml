@@ -94,7 +94,9 @@ targets:
   
   2_process/out/2_process_lake_tasks.ind:
     command: loop_tasks(task_plan = process_lake_tasks,
-      task_makefile = '2_process_lake_tasks.yml')
+      task_makefile = '2_process_lake_tasks.yml',
+      task_names = I('nhdhr_114540053'),
+      n_cores = 4)
     depends:
       - morphometry
       - 2_process/out/2_process_grp_tasks_completed.yml
