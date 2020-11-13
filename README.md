@@ -48,6 +48,8 @@ You can use `vim` to edit files locally.
 
 You can also use the Jupyter interface to edit files via a browser-based IDE. See https://hpcportal.cr.usgs.gov/hpc-user-docs/Yeti/Guides_and_Tutorials/how-to/Launch_Jupyter_Notebook.html for more.
 
+Once you have set up a script to launch jupyter lab for the project, and created the jlab environment for the user (see instructions below),
+
 Steps:
 
 1. In a new terminal window (call this one Terminal #2, assuming you'll keep one open for terminal access to Yeti):
@@ -68,12 +70,7 @@ and copy the first line printed out by that script (begins with `ssh`). Note tha
 Enter the command. Note that this terminal is now tied up.
 
 
-#### Creating a conda jupyter lab environment (once per project)
-```sh
-module load legacy
-module load python/anaconda3
-conda create -n jlab jupyterlab -c conda-forge
-```
+#### Creating a script to launch jupyter lab (once per project)
 Save the following script to `launch-jlab.sh`.
 
 ```sh
@@ -90,6 +87,13 @@ jupyter lab --ip '*' --no-browser --port $JPORT --notebook-dir=. &
 wait
 ```
 
+#### Creating a conda jupyter lab environment (once per user)
+```sh
+module load legacy
+module load python/anaconda3
+conda create -n jlab jupyterlab -c conda-forge
+```
+
 In order to add an R kernel to the Jupyter Lab IDE (so that we can build and run R notebooks in addition to Python notebooks), we need to run the following series of commands:
 ```sh
 module load legacy
@@ -97,4 +101,4 @@ module load python/anaconda3
 conda activate jlab
 conda install -c r r-irkernel zeromq
 ```
-You will have to re-launch jupyter lab to see the R kernel
+If you have already launched jupyter lab, you will have to re-launch jupyter lab to see the R kernel
