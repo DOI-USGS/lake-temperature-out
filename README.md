@@ -5,7 +5,7 @@ outputs and summaries from lake modeling pipelines
 
 ## Yeti quickstart
 
-Once everything is set up (see below), log into Tallgrass and get started like this:
+Once everything is set up (see below), log into Yeti and get started like this:
 ```sh
 ssh yeti.cr.usgs.gov
 cd /cxfs/projects/usgs/water/iidd/data-sci/lake-temp/lake-temperature-out
@@ -15,7 +15,7 @@ cd /cxfs/projects/usgs/water/iidd/data-sci/lake-temp/lake-temperature-out
 make sure you belong to the watertemp group -or- use iidd (or cida) in place of it below:
 
 ```sh
-salloc -A watertemp -n 4 -p normal -t 7:00:00
+salloc -A iidd -n 4 -p normal -t 7:00:00
 ```
 this ☝️ gives you 4 cores on normal for 7 hours. You probably want way more than 4, but this is a start.
 Then ssh into the node you are given, and from there, go to the working directory
