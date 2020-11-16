@@ -1,5 +1,5 @@
 
-do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, ...) {
+do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_cores, ...) {
   
   # Define task table rows
   tasks <- tibble(wtr_filename = site_files) %>% 
@@ -64,7 +64,8 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, ..
   # Build the tasks
   loop_tasks(task_plan = task_plan,
              task_makefile = task_makefile,
-             num_tries = 1)
+             num_tries = 1,
+             n_cores = n_cores)
   
   # Now return the file name of the final the combined CSV
   return(remake::fetch(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile))
