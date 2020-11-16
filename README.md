@@ -48,7 +48,7 @@ You can use `vim` to edit files locally.
 
 You can also use the Jupyter interface to edit files via a browser-based IDE. See https://hpcportal.cr.usgs.gov/hpc-user-docs/Yeti/Guides_and_Tutorials/how-to/Launch_Jupyter_Notebook.html for more.
 
-Once you have set up a script to launch jupyter lab for the project, and created the jlab environment for the user (see instructions below),
+Once you have set up a script to launch Jupyter Lab for the project, and created the jlab environment for the user (see instructions below),
 
 Steps:
 
@@ -70,7 +70,7 @@ and copy the first line printed out by that script (begins with `ssh`). Note tha
 Enter the command. Note that this terminal is now tied up.
 
 
-#### Creating a script to launch jupyter lab (once per project)
+#### Creating a script to launch Jupyter Lab (once per project)
 Save the following script to `launch-jlab.sh`.
 
 ```sh
@@ -87,7 +87,7 @@ jupyter lab --ip '*' --no-browser --port $JPORT --notebook-dir=. &
 wait
 ```
 
-#### Creating a conda jupyter lab environment (once per user)
+#### Creating a conda Jupyter Lab environment (once per user)
 ```sh
 module load legacy
 module load python/anaconda3
@@ -101,4 +101,21 @@ module load python/anaconda3
 conda activate jlab
 conda install -c r r-irkernel zeromq
 ```
-If you have already launched jupyter lab, you will have to re-launch jupyter lab to see the R kernel
+If you have already launched Jupyter Lab, you will have to re-launch Jupyter Lab to see the R kernel.
+
+Next we need to add the base R library from the Yeti R 3.6.3 module to our array of library paths in Jupyter Lab. Launch Jupyter Lab and open a new Jupyter Notebook with the R kernel. Run the command `.libPaths()`. You should see two paths listed:
+```sh
+'/cxfs/projects/usgs/water/iidd/data-sci/lake-temp/lake-temperature-out/Rlib_3_6'
+'/home/{username}/.conda/envs/jlab/lib/R/library'
+```
+We add the base R library from the Yeti R 3.6.3 module and set it as the second library to reference using this command:
+```sh
+.libPaths( c(.libPaths()[1], "/opt/ohpc/pub/usgs/libs/gnu8/R/3.6.3/lib64/R/library", .libPaths()[2]))
+```
+If you run `.libPaths()` again you should see these 3 paths listed in this order:
+```sh
+'/cxfs/projects/usgs/water/iidd/data-sci/lake-temp/lake-temperature-out/Rlib_3_6'
+'/opt/ohpc/pub/usgs/libs/gnu8/R/3.6.3/lib64/R/library'
+'/home/{username}/.conda/envs/jlab/lib/R/library'
+```
+Now we should be able to load any libraries from our project library folder, and any necessary dependencies that are not in our project library folder will be loaded from the Yeti R 3.6.3 module library.
