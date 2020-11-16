@@ -42,7 +42,7 @@ but code will need to be modified so that you use loop tasks and also so you can
 If the job fails or you are kicked off Yeti, no worries, as remake/scipiper will pick back up where you left off in the task table. 🎉
 
 
-## Editing files on the cluster
+## Editing files on the cluster - Launching Jupyter Lab
 
 You can use `vim` to edit files locally.
 
@@ -69,6 +69,21 @@ and copy the first line printed out by that script (begins with `ssh`). Note tha
 ```
 Enter the command. Note that this terminal is now tied up.
 
+#### Creating a conda Jupyter Lab environment (once per user)
+```sh
+module load legacy
+module load python/anaconda3
+conda create -n jlab jupyterlab -c conda-forge
+```
+
+In order to add an R kernel to the Jupyter Lab IDE (so that we can build and run R notebooks in addition to Python notebooks), we need to run the following series of commands:
+```sh
+module load legacy
+module load python/anaconda3
+conda activate jlab
+conda install -c r r-irkernel zeromq
+```
+If you have already set up Jupyter Lab for the project (see below) and launched Jupyter Lab, you will have to re-launch Jupyter Lab (see above) to see the R kernel.
 
 #### Creating a script to launch Jupyter Lab (once per project)
 Save the following script to `launch-jlab.sh`.
@@ -96,26 +111,10 @@ R_LIBS_USER="/cxfs/projects/usgs/water/iidd/data-sci/lake-temp/lake-temperature-
 ```
 Press 'Esc', then type ':wq' to save and close the file.
 
-Launch Jupyter Lab and open a new Jupyter Notebook with the R kernel. Run the command `.libPaths()`. You should see these 3 paths listed in this order:
+Launch Jupyter Lab (see above) and open a new Jupyter Notebook with the R kernel. Run the command `.libPaths()`. You should see these 3 paths listed in this order:
 ```sh
 '/cxfs/projects/usgs/water/iidd/data-sci/lake-temp/lake-temperature-out/Rlib_3_6'
 '/opt/ohpc/pub/usgs/libs/gnu8/R/3.6.3/lib64/R/library'
 '/home/{username}/.conda/envs/jlab/lib/R/library'
 ```
 Now we should be able to load any libraries from our project library folder while in Jupyter Lab, and any necessary dependencies that are not in our project library folder will be loaded from the Yeti R 3.6.3 module library.
-
-#### Creating a conda Jupyter Lab environment (once per user)
-```sh
-module load legacy
-module load python/anaconda3
-conda create -n jlab jupyterlab -c conda-forge
-```
-
-In order to add an R kernel to the Jupyter Lab IDE (so that we can build and run R notebooks in addition to Python notebooks), we need to run the following series of commands:
-```sh
-module load legacy
-module load python/anaconda3
-conda activate jlab
-conda install -c r r-irkernel zeromq
-```
-If you have already launched Jupyter Lab, you will have to re-launch Jupyter Lab to see the R kernel.
