@@ -48,9 +48,7 @@ You can use `vim` to edit files locally.
 
 You can also use the Jupyter interface to edit files via a browser-based IDE. See https://hpcportal.cr.usgs.gov/hpc-user-docs/Yeti/Guides_and_Tutorials/how-to/Launch_Jupyter_Notebook.html for more.
 
-Once you have set up a script to launch Jupyter Lab for the project, and created the jlab environment for the user (see instructions below),
-
-Steps:
+Once you have set up a script to launch Jupyter Lab for the project and created the jlab environment for the user (see instructions below), follow these steps:
 
 1. In a new terminal window (call this one Terminal #2, assuming you'll keep one open for terminal access to Yeti):
 ```sh
