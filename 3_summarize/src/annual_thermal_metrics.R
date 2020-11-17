@@ -7,7 +7,8 @@ calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_
     select(site_id, date = DateTime, starts_with("temp_")) %>% 
     pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
     mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
-    mutate(year = as.numeric(format(date, "%Y")))
+    mutate(year = as.numeric(format(date, "%Y"))) %>% 
+    filter_out_partial_yrs() # Only keep years with at least 365 days
   
   stopifnot(nrow(data_ready) > 0) # There should be data for each site file
   
@@ -109,6 +110,17 @@ calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_
 
 get_filenames_from_ind <- function(ind_file) {
   names(yaml::read_yaml(ind_file))
+}
+
+# Assumes that df has a column called `depth` and one called `year`
+# and that each row = 1 day / 1 depth combo.
+filter_out_partial_yrs <- function(df) {
+  n_depths <- df %>% pull(depth) %>% unique() %>% length()
+  df %>% 
+    add_count(year) %>% 
+    mutate(ndays = n/n_depths) %>% 
+    filter(ndays >= 365) %>% 
+    select(-n, -ndays)
 }
 
 # Collection of functions to calculate annual thermal metrics
