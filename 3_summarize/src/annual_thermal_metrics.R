@@ -1,5 +1,5 @@
 
-calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morphometry) {
+calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_file, morphometry) {
   
   start_tm <- Sys.time()
     
@@ -103,7 +103,7 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
   message(sprintf("Completed annual metrics for %s in %s min", site_id, 
                   round(as.numeric(Sys.time() - start_tm, units = "mins"), 2)))
   
-  return(annual_metrics)
+  saveRDS(annual_metrics, out_file)
 
 }
 
