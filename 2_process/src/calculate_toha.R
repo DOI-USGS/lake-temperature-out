@@ -12,7 +12,7 @@ calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
     # Can't use `site_data` since there aren't any observations
     site_id <- sub(pattern = ".*(nhdhr_.*)\\..*$", replacement = "\\1", target_name)
     warning(sprintf("Insufficient data to calculate TOHA for %s", site_id))
-    data.frame() %>% readr::write_csv(path = target_name)
+    data.frame() %>% readr::write_csv(file = target_name)
   } else {
     
     hypsos <- data.frame(H = morphometry$H, A = morphometry$A) %>% 
@@ -44,7 +44,7 @@ calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
       bind_rows() %>% 
       mutate(date = site_data$DateTime, .before = 1) %>% # Add the date column first (need dplyr > 1.0.0)
       mutate(site_id = site_data$site_id, .before = 1) %>% # Add the site column first (need dplyr > 1.0.0)
-      readr::write_csv(path = target_name)
+      readr::write_csv(file = target_name)
   }
   
 }
