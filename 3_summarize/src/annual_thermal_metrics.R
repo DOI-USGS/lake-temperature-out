@@ -441,7 +441,12 @@ is_in_longest_consective_chunk <- function(bool_vec) {
   continuous_sections$is_duplicated[continuous_sections$values] <- duplicated(continuous_sections$lengths[continuous_sections$values])
   continuous_sections$is_duplicated[!continuous_sections$values] <- FALSE
   
-  with(continuous_sections, rep(!is_duplicated & lengths == max(lengths[values]) & values, lengths))
+  # Handle situation where there are no stratified days and therefore none in the longest consecutive period
+  if(any(continuous_sections$values)) {
+    with(continuous_sections, rep(!is_duplicated & lengths == max(lengths[values]) & values, lengths))
+  } else {
+    rep(FALSE, length(bool_vec))
+  }
 }
 
 get_ice_onoff <- function(date, ice, peak_temp_dt, on_or_off) {
