@@ -19,7 +19,7 @@ targets:
   ### Push TOHA & annual metrics files for MN Data release ###
   
   sb_id_mnrelease:
-    command: I('5e774355e4b01d509270e2a1')
+    command: c(I('5e774355e4b01d509270e2a1'))
   
   toha_pgdl:
     command: sb_replace_files(
