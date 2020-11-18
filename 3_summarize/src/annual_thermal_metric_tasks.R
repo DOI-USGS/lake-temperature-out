@@ -74,5 +74,5 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_
 }
 
 combine_thermal_metrics <- function(target_name, ...) {
-  purrr::reduce(list(...), bind_rows) %>% readr::write_csv(target_name)
+  purrr::map(list(...), readRDS) %>% purrr::reduce(bind_rows) %>% readr::write_csv(target_name)
 }
