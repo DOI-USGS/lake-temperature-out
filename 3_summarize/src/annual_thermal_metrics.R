@@ -1,5 +1,5 @@
 
-calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morphometry) {
+calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_file, morphometry, verbose = FALSE) {
   
   start_tm <- Sys.time()
     
@@ -7,7 +7,8 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
     select(site_id, date = DateTime, starts_with("temp_")) %>% 
     pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
     mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
-    mutate(year = as.numeric(format(date, "%Y")))
+    mutate(year = as.numeric(format(date, "%Y"))) %>% 
+    filter_out_partial_yrs() # Only keep years with at least 365 days
   
   stopifnot(nrow(data_ready) > 0) # There should be data for each site file
   
@@ -100,15 +101,28 @@ calculate_annual_metrics_per_lake <- function(site_id, site_file, ice_file, morp
                     date_over_temps, days_height_vol_in_range, metalimnion_derivatives)) %>%
     ungroup()
   
-  message(sprintf("Completed annual metrics for %s in %s min", site_id, 
-                  round(as.numeric(Sys.time() - start_tm, units = "mins"), 2)))
+  if(verbose) {
+    message(sprintf("Completed annual metrics for %s in %s min", site_id, 
+                    round(as.numeric(Sys.time() - start_tm, units = "mins"), 2)))
+  }
   
-  return(annual_metrics)
+  saveRDS(annual_metrics, out_file)
 
 }
 
 get_filenames_from_ind <- function(ind_file) {
   names(yaml::read_yaml(ind_file))
+}
+
+# Assumes that df has a column called `depth` and one called `year`
+# and that each row = 1 day / 1 depth combo.
+filter_out_partial_yrs <- function(df) {
+  n_depths <- df %>% pull(depth) %>% unique() %>% length()
+  df %>% 
+    add_count(year) %>% 
+    mutate(ndays = n/n_depths) %>% 
+    filter(ndays >= 365) %>% 
+    select(-n, -ndays)
 }
 
 # Collection of functions to calculate annual thermal metrics
@@ -441,7 +455,12 @@ is_in_longest_consective_chunk <- function(bool_vec) {
   continuous_sections$is_duplicated[continuous_sections$values] <- duplicated(continuous_sections$lengths[continuous_sections$values])
   continuous_sections$is_duplicated[!continuous_sections$values] <- FALSE
   
-  with(continuous_sections, rep(!is_duplicated & lengths == max(lengths[values]) & values, lengths))
+  # Handle situation where there are no stratified days and therefore none in the longest consecutive period
+  if(any(continuous_sections$values)) {
+    with(continuous_sections, rep(!is_duplicated & lengths == max(lengths[values]) & values, lengths))
+  } else {
+    rep(FALSE, length(bool_vec))
+  }
 }
 
 get_ice_onoff <- function(date, ice, peak_temp_dt, on_or_off) {
