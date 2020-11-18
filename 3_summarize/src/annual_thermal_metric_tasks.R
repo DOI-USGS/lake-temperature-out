@@ -1,5 +1,5 @@
 
-do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, ...) {
+do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_cores, ...) {
   
   # Define task table rows
   tasks <- tibble(wtr_filename = site_files) %>% 
@@ -28,15 +28,18 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, ..
   calc_annual_metrics <- create_task_step(
     step_name = 'calc_annual_metrics',
     target_name = function(task_name, step_name, ...) {
-      sprintf("%s_annual_thermal_metrics", task_name)
+      sprintf("3_summarize/tmp/%s_annual_thermal_metrics.rds", task_name)
     },
     command = function(..., task_name, steps) {
       task_info <- filter(tasks, site_id == task_name)
       psprintf("calculate_annual_metrics_per_lake(", 
+               "out_file = target_name,",
                "site_id = I('%s')," = task_name,
                "site_file = '%s'," = task_info$wtr_filename,
                "ice_file = '%s'," = task_info$ice_filename,
-               "morphometry = `%s`)" = steps[["split_morphometry"]]$target_name
+               "morphometry = `%s`," = steps[["split_morphometry"]]$target_name,
+               # Doesn't actually print to console with `loop_tasks` but let's you see if you are troubleshooting individual files
+               "verbose = I(TRUE))" 
       )
     }
   )
@@ -64,7 +67,8 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, ..
   # Build the tasks
   loop_tasks(task_plan = task_plan,
              task_makefile = task_makefile,
-             num_tries = 1)
+             num_tries = 1,
+             n_cores = n_cores)
   
   # Now return the file name of the final the combined CSV
   return(remake::fetch(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile))
@@ -72,5 +76,5 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, ..
 }
 
 combine_thermal_metrics <- function(target_name, ...) {
-  purrr::reduce(list(...), bind_rows) %>% readr::write_csv(target_name)
+  purrr::map(list(...), readRDS) %>% purrr::reduce(bind_rows) %>% readr::write_csv(target_name)
 }
