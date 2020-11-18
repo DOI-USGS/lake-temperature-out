@@ -13,6 +13,7 @@ sb_replace_files <- function(sb_id, ..., file_hash){
     }
   }
   
+  files <- c(...)
   if (length(files) > 0){
     item_replace_files(sb_id, files = files)
   }
