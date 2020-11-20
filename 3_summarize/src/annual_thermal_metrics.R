@@ -1,5 +1,5 @@
 
-calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_file, morphometry, verbose = FALSE) {
+calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_file, temp_range_file, morphometry, verbose = FALSE) {
   
   start_tm <- Sys.time()
     
@@ -34,6 +34,8 @@ calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_
     mutate(in_stratified_period = is_in_longest_consective_chunk(stratified)) %>% 
     ungroup() %>% 
     select(-year)
+  
+  temp_ranges <- read_tsv(temp_range_file)
   
   data_ready_with_flags <- data_ready %>% 
     arrange(date, depth) %>% # Data was coming in correct, but just making sure 
@@ -85,8 +87,8 @@ calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_
       # See https://github.com/USGS-R/necsc-lake-modeling/blob/d37377ea422b9be324e8bd203fc6eecc36966401/data/habitat_metrics_table_GH.csv
 
       days_height_vol_in_range = calc_days_height_vol_within_range(date, depth, wtr, hypso,
-                                                                   temp_low = c(12, 10.6, 18.2, 18, 19.3, 19, 20.6, 20, 22, 23, 25, 26.2, 26, 26, 28, 28, 29, 30),
-                                                                   temp_high = c(28, 11.2, 28.2, 22, 23.3, 23, 23.2, 30, 23, 31, 29, 32, 28, 30, 29, 32, 100, 31)),
+                                                                   temp_low = temp_ranges$Temp_Low,
+                                                                   temp_high = temp_ranges$Temp_High),
 
       spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
       post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
