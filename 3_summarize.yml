@@ -63,6 +63,7 @@ targets:
       final_target = target_name,
       site_files = pgdl_site_files,
       ice_files = ice_files,
+      temp_range_file = '3_summarize/in/temp_ranges_for_metrics.txt', 
       n_cores = 1,
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
@@ -74,6 +75,7 @@ targets:
       final_target = target_name,
       site_files = pb0_site_files,
       ice_files = ice_files,
+      temp_range_file = '3_summarize/in/temp_ranges_for_metrics.txt',
       n_cores = 40,
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
