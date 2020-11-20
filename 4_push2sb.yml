@@ -23,16 +23,24 @@ targets:
   
   toha_pgdl:
     command: sb_replace_files(
-      sb_id = sb_id_mnrelease, file_hash = '3_summarize/out/3_summarize_zip_pgdl_toha.yml')
+      sb_id = sb_id_mnrelease, 
+      file_hash = '3_summarize/out/3_summarize_zip_pgdl_toha.yml',
+      sources = '4_push2sb/src/sb_utils.R')
   
   toha_pb0:
     command: sb_replace_files(
-      sb_id = sb_id_mnrelease, file_hash = '3_summarize/out/3_summarize_zip_pb0_toha.yml')
+      sb_id = sb_id_mnrelease, 
+      file_hash = '3_summarize/out/3_summarize_zip_pb0_toha.yml',
+      sources = '4_push2sb/src/sb_utils.R')
   
   annual_metrics_pgdl:
     command: sb_replace_files(
-      sb_id = sb_id_mnrelease, '3_summarize/out/annual_metrics_pgdl.csv')
+      sb_id = sb_id_mnrelease, 
+      '3_summarize/out/annual_metrics_pgdl.csv',
+      sources = '4_push2sb/src/sb_utils.R')
   
   annual_metrics_pb0:
     command: sb_replace_files(
-      sb_id = sb_id_mnrelease, '3_summarize/out/annual_metrics_pb0.csv')
+      sb_id = sb_id_mnrelease, 
+      '3_summarize/out/annual_metrics_pb0.csv',
+      sources = '4_push2sb/src/sb_utils.R')
