@@ -1,5 +1,5 @@
 
-calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_file, temp_range_file, morphometry, verbose = FALSE) {
+calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_file, temp_ranges, morphometry, verbose = FALSE) {
   
   start_tm <- Sys.time()
     
@@ -34,8 +34,6 @@ calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_
     mutate(in_stratified_period = is_in_longest_consective_chunk(stratified)) %>% 
     ungroup() %>% 
     select(-year)
-  
-  temp_ranges <- read_tsv(temp_range_file)
   
   data_ready_with_flags <- data_ready %>% 
     arrange(date, depth) %>% # Data was coming in correct, but just making sure 
