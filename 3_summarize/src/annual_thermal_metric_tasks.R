@@ -6,7 +6,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, te
     extract(wtr_filename, c('prefix','site_id','suffix'), "(pb0|pball|pgdl)_data_(.*)(.feather)", remove = FALSE) %>% 
     left_join(extract(tibble(ice_filename = ice_files), ice_filename, c('site_id'), "pb0_(.*)_ice_flags.csv", remove = FALSE), by = "site_id") %>% 
     mutate(temp_range_file = temp_range_file) %>% # Same for each task
-    select(site_id, wtr_filename, ice_filename, prefix)
+    select(site_id, wtr_filename, ice_filename, temp_range_file, prefix)
   
   model_type <- pull(tasks, prefix) %>% unique()
   
