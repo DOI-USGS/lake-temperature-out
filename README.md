@@ -11,6 +11,19 @@ ssh yeti.cr.usgs.gov
 cd /cxfs/projects/usgs/water/iidd/data-sci/lake-temp/lake-temperature-out
 ```
 
+## Configure Yeti session to not change file permissions
+
+One limitation we have discovered with default configurations in Yeti is that any time someone modifies a file, the file permissions change so that others are locked out. This made it really difficult to work collaboratively in one directory on Yeti, especially with git repos because whoever last pulled from upstream became the "owner" of any files modified from that pull. To get around this, you can set a configuration in your Yeti session so that any changes you make to a file will not modify the file's permissions. You will need to run the command below in every Yeti session that you start up. Note that this is not something you want to do if you are working on files that only you should be able to change, e.g. your id_rsa keys. 
+```sh
+umask 002
+```
+
+If you forget to do this in a session and end up modifying a file and change the permissions, you can restore permissions to others by running the code below to give read/write access to users in your group.
+```sh
+chmod g+w <filename or directory>
+```
+
+
 ## Using Interactive:
 make sure you belong to the watertemp group -or- use iidd (or cida) in place of it below:
 
