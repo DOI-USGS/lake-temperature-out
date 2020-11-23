@@ -29,7 +29,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, te
   calc_annual_metrics <- create_task_step(
     step_name = 'calc_annual_metrics',
     target_name = function(task_name, step_name, ...) {
-      sprintf("3_summarize/tmp/%s_annual_thermal_metrics.rds", task_name)
+      sprintf("3_summarize/tmp/%s_%s_annual_thermal_metrics.rds", model_type, task_name)
     },
     command = function(..., task_name, steps) {
       task_info <- filter(tasks, site_id == task_name)
