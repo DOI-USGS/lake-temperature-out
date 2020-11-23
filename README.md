@@ -13,7 +13,7 @@ cd /cxfs/projects/usgs/water/iidd/data-sci/lake-temp/lake-temperature-out
 
 ## Configure Yeti session to not change file permissions
 
-One limitation we have discovered with default configurations in Yeti is that any time someone modifies a file, the file permissions are changed so that others are locked out. This makes it really difficult to work collaboratively in one directory on Yeti. This especially made it difficult to work with git repos and Yeti because whoever last pulled from upstream became the "owner" of any files modified from that pull. To get around this, you can set a configuration in your Yeti session so that any changes you make to a file doesn't modify the file's permissions. You will need to run this command in every Yeti session that your start up. Note that this is not something you want to do if you are working on files that only you should be able to change, e.g. your id_rsa keys. 
+One limitation we have discovered with default configurations in Yeti is that any time someone modifies a file, the file permissions change so that others are locked out. This made it really difficult to work collaboratively in one directory on Yeti, especially with git repos because whoever last pulled from upstream became the "owner" of any files modified from that pull. To get around this, you can set a configuration in your Yeti session so that any changes you make to a file will not modify the file's permissions. You will need to run the command below in every Yeti session that you start up. Note that this is not something you want to do if you are working on files that only you should be able to change, e.g. your id_rsa keys. 
 ```sh
 umask 002
 ```
