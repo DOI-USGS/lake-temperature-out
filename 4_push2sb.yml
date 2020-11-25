@@ -14,15 +14,15 @@ sources:
 targets:
   4_push2sb:
     depends:
-      - 4_push2sb/out/pgdl_metrics.csv
-      - 4_push2sb/out/pb0_metrics.csv
+      - 4_push2sb/out/pgdl_metrics_on_sb.csv
+      - 4_push2sb/out/pb0_metrics_on_sb.csv
 
   ### Push TOHA & annual metrics files for MN Data release ###
   
   sb_id_mnrelease:
     command: c(I('5e774355e4b01d509270e2a1'))
   
-  4_push2sb/out/pgdl_metrics.csv:
+  4_push2sb/out/pgdl_metrics_on_sb.csv:
     command: sb_replace_files(
       filename = target_name, 
       sb_id = sb_id_mnrelease, 
@@ -30,7 +30,7 @@ targets:
       file_hash = '3_summarize/out/3_summarize_zip_pgdl_toha.yml',
       sources = '4_push2sb/src/sb_utils.R')
   
-  4_push2sb/out/pb0_metrics.csv:
+  4_push2sb/out/pb0_metrics_on_sb.csv:
     command: sb_replace_files(
       filename = target_name, 
       sb_id = sb_id_mnrelease, 
