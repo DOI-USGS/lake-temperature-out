@@ -3,6 +3,7 @@ target_default: 3_summarize
 packages:
   - dplyr
   - feather
+  - readr
   - tidyr
 
 sources:
@@ -52,6 +53,9 @@ targets:
   
   # Based these additional metrics on the ones included in a previous lake modeling
   # data release (see https://www.sciencebase.gov/catalog/item/57d9e887e4b090824ffb1098)
+
+  temp_ranges:
+    command: read_tsv("3_summarize/in/temp_ranges_for_metrics.txt")
   
   ice_files:
     command: get_filenames_from_ind("2_process/out/iceflags_unzipped.yml")
@@ -63,7 +67,6 @@ targets:
       final_target = target_name,
       site_files = pgdl_site_files,
       ice_files = ice_files,
-      temp_range_file = '3_summarize/in/temp_ranges_for_metrics.txt', 
       n_cores = 1,
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
@@ -75,7 +78,6 @@ targets:
       final_target = target_name,
       site_files = pb0_site_files,
       ice_files = ice_files,
-      temp_range_file = '3_summarize/in/temp_ranges_for_metrics.txt',
       n_cores = 40,
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')

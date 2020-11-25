@@ -1,12 +1,11 @@
 
-do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, temp_range_file, n_cores, ...) {
+do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_cores, ...) {
   
   # Define task table rows
   tasks <- tibble(wtr_filename = site_files) %>% 
     extract(wtr_filename, c('prefix','site_id','suffix'), "(pb0|pball|pgdl)_data_(.*)(.feather)", remove = FALSE) %>% 
     left_join(extract(tibble(ice_filename = ice_files), ice_filename, c('site_id'), "pb0_(.*)_ice_flags.csv", remove = FALSE), by = "site_id") %>% 
-    mutate(temp_range_file = temp_range_file) %>% # Same for each task
-    select(site_id, wtr_filename, ice_filename, temp_range_file, prefix)
+    select(site_id, wtr_filename, ice_filename, prefix)
   
   model_type <- pull(tasks, prefix) %>% unique()
   
@@ -38,7 +37,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, te
                "site_id = I('%s')," = task_name,
                "site_file = '%s'," = task_info$wtr_filename,
                "ice_file = '%s'," = task_info$ice_filename,
-               "temp_range_file = '%s'," = task_info$temp_range_file,
+               "temp_ranges = temp_ranges,",
                "morphometry = `%s`," = steps[["split_morphometry"]]$target_name,
                # Doesn't actually print to console with `loop_tasks` but let's you see if you are troubleshooting individual files
                "verbose = I(TRUE))" 
