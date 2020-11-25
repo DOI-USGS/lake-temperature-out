@@ -115,11 +115,12 @@ targets:
   #'2_process/tmp/pgdl_toha_nhdhr_120018569.csv', FAILED!!!Error in seq.int(0, to0 - from, by) : 'to' must be a finite number
   #In addition: There were 50 or more warnings (use warnings() to see the first 50)
   2_process/out/2_pgdl_lake_tasks.ind:
-    command: scmake(
-      target_names = I('2_pgdl_lake_tasks.ind_promise'),
-      remake_file = '2_pgdl_lake_tasks.yml')
+    command: loop_tasks(task_plan = pgdl_lake_tasks,
+      task_makefile = '2_pgdl_lake_tasks.yml',
+      n_cores = 40)
     depends:
       - morphometry
+      - 2_process/out/2_pgdl_grp_tasks_completed.yml
       
   ### Calculate TOHA for each lake using observed temperature data ###
   
