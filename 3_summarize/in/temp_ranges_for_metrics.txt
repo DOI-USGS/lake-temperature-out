@@ -1,92 +1,32 @@
-Attribute	Fish thermal guild	Temp_Low	Temp_High	RANGE	Specific metric	Output details	Units	"Source = Eaton et al., 1995; Stefan et al., 1995; Xang et al. 1999"
-days_6.4_11.8	cold	6.4	11.8	6.4-11.8	Lower good-growth temperature	days in which there is any part of water column between RANGE degrees C	days	
-height_6.4_11.8	cold	6.4	11.8	6.4-11.8	Lower good-growth temperature	meters of water between RANGE degrees C	linear distance (m)	
-vol_6.4_11.8	cold	6.4	11.8	6.4-11.8	Lower good-growth temperature	volume of water between RANGE degrees C	volume (m^3*1000)	
-days_13.2_18.2	cool	13.2	18.2	13.2-18.2	Lower good-growth temperature	days in which there is any part of water column between RANGE degrees C	days	
-height_13.2_18.2	cool	13.2	18.2	13.2-18.2	Lower good-growth temperature	meters of water between RANGE degrees C	linear distance (m)	
-vol_13.2_18.2	cool	13.2	18.2	13.2-18.2	Lower good-growth temperature	volume of water between RANGE degrees C	volume (m^3*1000)	
-days_17.7_22.5	warm	17.7	22.5	17.7-22.5	Lower good-growth temperature	days in which there is any part of water column between RANGE degrees C	days	
-height_17.7_22.5	warm	17.7	22.5	17.7-22.5	Lower good-growth temperature	meters of water between RANGE degrees C	linear distance (m)	
-vol_17.7_22.5	warm	17.7	22.5	17.7-22.5	Lower good-growth temperature	volume of water between RANGE degrees C	volume (m^3*1000)	
-days_11.5_18.7	cold	11.5	18.7	11.5-18.7	Optimum temperature	days in which there is any part of water column between RANGE degrees C	days	
-height_11.5_18.7	cold	11.5	18.7	11.5-18.7	Optimum temperature	meters of water between RANGE degrees C	linear distance (m)	
-vol_11.5_18.7	cold	11.5	18.7	11.5-18.7	Optimum temperature	volume of water between RANGE degrees C	volume (m^3*1000)	
-days_24.0_25.7	cool	24	25.7	24-25.7	Optimum temperature	days in which there is any part of water column between RANGE degrees C	days	
-height_24.0_25.7	cool	24	25.7	24-25.7	Optimum temperature	meters of water between RANGE degrees C	linear distance (m)	
-vol_24.0_25.7	cool	24	25.7	24-25.7	Optimum temperature	volume of water between RANGE degrees C	volume (m^3*1000)	
-days_27.0_32.0	warm	27	32	27-32	Optimum temperature	days in which there is any part of water column between RANGE degrees C	days	
-height_27.0_32.0	warm	27	32	27-32	Optimum temperature	meters of water between RANGE degrees C	linear distance (m)	
-vol_27.0_32.0	warm	27	32	27-32	Optimum temperature	volume of water between RANGE degrees C	volume (m^3*1000)	
-days_15.5_21.2	cold	15.5	21.2	15.5-21.2	Upper good growth temperature	days in which there is any part of water column between RANGE degrees C	days	
-height_15.5_21.2	cold	15.5	21.2	15.5-21.2	Upper good growth temperature	meters of water between RANGE degrees C	linear distance (m)	
-vol_15.5_21.2	cold	15.5	21.2	15.5-21.2	Upper good growth temperature	volume of water between RANGE degrees C	volume (m^3*1000)	
-days_27.7_28.8	cool	27.7	28.8	27.7-28.8	Upper good growth temperature	days in which there is any part of water column between RANGE degrees C	days	
-height_27.7_28.8	cool	27.7	28.8	27.7-28.8	Upper good growth temperature	meters of water between RANGE degrees C	linear distance (m)	
-vol_27.7_28.8	cool	27.7	28.8	27.7-28.8	Upper good growth temperature	volume of water between RANGE degrees C	volume (m^3*1000)	
-days_31.3_34.7	warm	31.3	34.7	31.3-34.7	Upper good growth temperature	days in which there is any part of water column between RANGE degrees C	days	
-height_31.3_34.7	warm	31.3	34.7	31.3-34.7	Upper good growth temperature	meters of water between RANGE degrees C	linear distance (m)	
-vol_31.3_34.7	warm	31.3	34.7	31.3-34.7	Upper good growth temperature	volume of water between RANGE degrees C	volume (m^3*1000)	
-days_26.6_100	cold	26.6	100	26.6-100	Upper lethal temperature	days in which there is any part of water column between RANGE degrees C	days	
-height_26.6_100	cold	26.6	100	26.6-100	Upper lethal temperature	meters of water between RANGE degrees C	linear distance (m)	
-vol_26.6_100	cold	26.6	100	26.6-100	Upper lethal temperature	volume of water between RANGE degrees C	volume (m^3*1000)	
-days_32.3_100	cool	32.3	100	32.3-100	Upper lethal temperature	days in which there is any part of water column between RANGE degrees C	days	
-height_32.3_100	cool	32.3	100	32.3-100	Upper lethal temperature	meters of water between RANGE degrees C	linear distance (m)	
-vol_32.3_100	cool	32.3	100	32.3-100	Upper lethal temperature	volume of water between RANGE degrees C	volume (m^3*1000)	
-days_36_100	warm	36	100	36-100	Upper lethal temperature	days in which there is any part of water column between RANGE degrees C	days	
-height_36_100	warm	36	100	36-100	Upper lethal temperature	meters of water between RANGE degrees C	linear distance (m)	
-vol_36_100	warm	36	100	36-100	Upper lethal temperature	volume of water between RANGE degrees C	volume (m^3*1000)	
-days_12_28		12	28		Optimal age 0 thermal habitat meters	days in which there is any part of water column between 12-28 degrees C	days	
-height_12_28		12	28		Optimal age 0 thermal habitat meters	meters of water between 12-28 degrees C	linear distance (m)	
-vol_12_28		12	28		Optimal age 0 thermal habitat volume	volume of water between 12-28 degrees C	volume (m^3*1000)	
-days_10.6_11.2		10.6	11.2		Optimal larval thermal habitat days	days in which there is any part of water column between 10.6-11.2 degrees C	days	
-height_10.6_11.2		10.6	11.2		Optimal larval thermal habitat meters	meters of water between 10.6-11.2 degrees C	linear distance (m)	
-vol_10.6_11.2		10.6	11.2		Optimal larval thermal habitat volume	volume of water between 10.6-11.2 degrees C	volume (m^3*1000)	
-days_18.2_28.2		18.2	28.2		Good growth habitat days	days in which there is any part of water column between 18.2-28.2 degrees C	days	
-height_18.2_28.2		18.2	28.2		Good growth habitat meters	meters of water between 18.2-28.2 degrees C	linear distance (m)	
-vol_18.2_28.2		18.2	28.2		Good growth habitat volume	volume of water between 18.2-28.2 degrees C	volume (m^3*1000)	
-days_18_22		18	22		Optimal age 0 thermal habitat days	days in which there is any part of water column between 18-22 degrees C	days	
-height_18_22		18	22		Optimal age 0 thermal habitat meters	meters of water between 18-22 degrees C	linear distance (m)	
-vol_18_22		18	22		Optimal age 0 thermal habitat volume	volumne of water between 18-22 degrees C	volume (m^3*1000)	
-days_19.3_23.3		19.3	23.3		YOY optimum days	days in which there is any part of water columnbetween 19.3-23.3 degrees C	days	
-height_19.3_23.3		19.3	23.3		YOY optimum meters	meters of water between 19.3-23.3 degrees C	linear distance (m)	
-vol_19.3_23.3		19.3	23.3		YOY optimum volume	volume of water between 19.3-23.3 degrees C	volume (m^3*1000)	
-days_19_23		19	23		Optimal thermal habitat days	days in which there is any part of water column between 19-23 degrees C	days	
-height_19_23		19	23		Optimal thermal habitat meters	meters of water between 19-23 degrees C	linear distance (m)	
-vol_19_23		19	23		Optimal thermal habitat volume	volume of water between 19-23 degrees C	volume (m^3*1000)	
-days_20.6_23.2		20.6	23.2		Optimal thermal habitat days	days in which there is any part of water column between 20.6 and 23.2 degrees C	days	
-height_20.6_23.2		20.6	23.2		Optimal thermal habitat meters	meters of water between 20.6 and 23.2 degrees C	linear distance (m)	
-vol_20.6_23.2		20.6	23.2		Optimal thermal habitat volume	volume of water between 20.6 and 23.2 degrees C	volume (m^3*1000)	
-days_20_30		20	30		larval optimum days	days in which there is any part of water column between 20-30 degrees C	days	
-height_20_30		20	30		larval optimum meters	meters of water between 20-30 degrees C	linear distance (m)	
-vol_20_30		20	30		larval optimum volume	volume of water column between 20-30 degrees C	volume (m^3*1000)	
-days_21_100		21	100		length of growing season for YOY	duration of epilimnion temp >21 degrees C	days	
-days_22_23		22	23		Optimal thermal habitat days	days in which there is any part of water column between 22 and 23 degrees C	days	
-height_22_23		22	23		Optimal thermal habitat meters	meters of water between 22 and 23 degrees C	linear distance (m)	
-vol_22_23		22	23		Optimal thermal habitat volume	volume of water between 22 and 23 degrees C	volume (m^3*1000)	
-days_23_31		23	31		juvenile optimum days	days in which there is any part of water column between 23-31 degrees C	days	
-height_23_31		23	31		juvenile optimum meters	height of water column between 23-31 degrees C	linear distance (m)	
-vol_23_31		23	31		juvenile optimum volume	volume of water column between 23-31 degrees C	volume (m^3*1000)	
-days_25_29		25	29		larval optimum days	days in which any part of water column is between 25-29 degrees C	days	
-height_25_29		25	29		larval optimum meters	meters of water between 25-29 degrees C	linear distance (m)	
-vol_25_29		25	29		larval optimum volume	volume of water between 25-29 degrees C	volume (m^3*1000)	
-days_26.2_32		26.2	32		Good growth habitat days	days in which there is any part of water column between 26.6-32 degrees C	days	
-height_26.2_32		26.2	32		Good growth habitat meters	meters of water between 26.6-32 degrees C	linear distance (m)	
-vol_26.2_32		26.2	32		Good growth habitat volume	volume of water between 26.6-32 degrees C	volume (m^3*1000)	
-days_26_28		26	28		subadult optimum days	days in which there is any part of water column between 26-28 degrees C	days	
-height_26_28		26	28		subadult optimum meters	meters of water between 26-28 degrees C	linear distance (m)	
-vol_26_28		26	28		subadult optimum volume	volume of water between 26-28 degrees C	volume (m^3*1000)	
-days_26_30		26	30		adult optimum days	days in which there is any part of water column between 26-30	days	
-height_26_30		26	30		adult optimum meters	meters of water between 26-30	linear distance (m)	
-vol_26_30		26	30		adult optimum volume	volume of water between 26-30	volume (m^3*1000)	
-days_28_29		28	29		juvenile optimum days	days in which there is any part of water column between 28-29 degrees C	days	
-height_28_29		28	29		juvenile optimum meters	meters of water between 28-29 degrees C	linear distance (m)	
-vol_28_29		28	29		juvenile optimum volume	volume of water between 28-29 degrees C	volume (m^3*1000)	
-days_28_32		28	32		juvenile optimum meters	days in which any part of water column is between 28-32 degrees C	days	
-height_28_32		28	32		juvenile optimum meters	meters of water between 28-32 degrees C	linear distance (m)	
-vol_28_32		28	32		juvenile optimum volume	volume of water between 28-32 degrees C	volume (m^3*1000)	
-days_29_100		29	100		lethal habitat	days in which there is any part of water column between 29-100 degrees C	days	
-height_29_100		29	100		lethal habitat	meters of water between 29-100 degrees C	linear distance (m)	
-vol_29_100		29	100		lethal habitat	volume of water between 29 and 100 degrees C	volume (m^3*1000)	
-days_30_31		30	31		adult optimum days	days in which there is any part of water column between 30-31 degrees C	days	
-height_30_31		30	31		adult optimum meters	meters of water between 30-31 degrees C	linear distance (m)	
-vol_30_31		30	31		adult optimum volume	volume of water between 30-31 degrees C	volume (m^3*1000)	
+Temp_Low	Temp_High	RANGE	Specific metric	Fish thermal guild
+6.4	11.8	6.4-11.8	Lower good-growth temperature	cold
+13.2	18.2	13.2-18.2	Lower good-growth temperature	cool
+17.7	22.5	17.7-22.5	Lower good-growth temperature	warm
+11.5	18.7	11.5-18.7	Optimum temperature	cold
+24	25.7	24-25.7	Optimum temperature	cool
+27	32	27-32	Optimum temperature	warm
+15.5	21.2	15.5-21.2	Upper good growth temperature	cold
+27.7	28.8	27.7-28.8	Upper good growth temperature	cool
+31.3	34.7	31.3-34.7	Upper good growth temperature	warm
+26.6	100	26.6-100	Upper lethal temperature	cold
+32.3	100	32.3-100	Upper lethal temperature	cool
+36	100	36-100	Upper lethal temperature	warm
+12	28	12-28	Optimal age 0 thermal habitat meters	
+10.6	11.2	10.6-11.2	Optimal larval thermal habitat days	
+18.2	28.2	18.2-28.2	Good growth habitat days	
+18	22	18-22	Optimal age 0 thermal habitat days	
+19.3	23.3	19.3-23.3	YOY optimum days	
+19	23	19-23	Optimal thermal habitat days	
+20.6	23.2	20.6-23.2	Optimal thermal habitat days	
+20	30	20-30	larval optimum days	
+21	100	21-100	length of growing season for YOY	
+22	23	22-23	Optimal thermal habitat days	
+23	31	23-31	juvenile optimum days	
+25	29	25-29	larval optimum days	
+26.2	32	26.2-32	Good growth habitat days	
+26	28	26-28	subadult optimum days	
+26	30	26-30	adult optimum days	
+28	29	28-29	juvenile optimum days	
+28	32	28-32	juvenile optimum meters	
+29	100	29-100	lethal habitat	
+30	31	30-31	adult optimum days	
