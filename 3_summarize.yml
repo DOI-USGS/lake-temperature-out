@@ -67,9 +67,11 @@ targets:
       final_target = target_name,
       site_files = pgdl_site_files,
       ice_files = ice_files,
-      n_cores = 1,
+      n_cores = 40,
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
+    depends:
+      - temp_ranges
   
   pb0_site_files:
     command: get_filenames_from_ind("2_process/out/2_process_grp_tasks_completed.yml")
@@ -81,3 +83,5 @@ targets:
       n_cores = 40,
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
+    depends:
+      - temp_ranges
