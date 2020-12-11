@@ -11,7 +11,7 @@ packages:
 sources:
   - 2_process/src/process_helpers.R
   - 2_process/src/do_lakegroup_tasks.R
-  - 2_process/src/create_lake_task_plan.R
+  - 2_process/src/do_lake_toha_tasks.R
   - 2_process/src/observed_data_helpers_prepare.R
   - 2_process/src/create_obs_lake_task_plan.R
 
@@ -55,47 +55,23 @@ targets:
   
   ### Calculate TOHA for each lake ###
   
-  ## For PB0 ##
-  process_lake_tasks:
-    command: create_lake_tasks(task_df_fn = '2_process/out/2_process_grp_tasks_completed.yml', 
-      log_folder = I("2_process/log"))
-  
-  2_process_lake_tasks.yml:
-    command: create_lake_task_makefile(
-      makefile = target_name, 
-      task_plan = process_lake_tasks, 
-      remake_file = I('2_process.yml'),
-      final_targets = I('2_process/out/2_process_lake_tasks.ind'))
-  
   2_process/out/2_process_lake_tasks.ind:
-    command: loop_tasks(task_plan = process_lake_tasks,
-      task_makefile = '2_process_lake_tasks.yml',
-      n_cores = 40)
+    command: do_lake_toha_tasks(
+      final_target = target_name,
+      task_df_fn = '2_process/out/2_process_grp_tasks_completed.yml',
+      n_cores = 40,
+      '2_process/src/calculate_toha.R')
     depends:
       - morphometry
-      - 2_process/out/2_process_grp_tasks_completed.yml
 
-  ## For PGDL ##
-  pgdl_lake_tasks:
-    command: create_lake_tasks(task_df_fn = '2_process/out/2_pgdl_grp_tasks_completed.yml', 
-      log_folder = I("2_process/log"))
-  
-  2_pgdl_lake_tasks.yml:
-    command: create_lake_task_makefile(
-      makefile = target_name, 
-      task_plan = pgdl_lake_tasks, 
-      remake_file = I('2_process.yml'),
-      final_targets = I('2_process/out/2_pgdl_lake_tasks.ind'))
-  
-  #'2_process/tmp/pgdl_toha_nhdhr_120018569.csv', FAILED!!!Error in seq.int(0, to0 - from, by) : 'to' must be a finite number
-  #In addition: There were 50 or more warnings (use warnings() to see the first 50)
   2_process/out/2_pgdl_lake_tasks.ind:
-    command: loop_tasks(task_plan = pgdl_lake_tasks,
-      task_makefile = '2_pgdl_lake_tasks.yml',
-      n_cores = 40)
+    command: do_lake_toha_tasks(
+      final_target = target_name,
+      task_df_fn = '2_process/out/2_pgdl_grp_tasks_completed.yml',
+      n_cores = 40,
+      '2_process/src/calculate_toha.R')
     depends:
       - morphometry
-      - 2_process/out/2_pgdl_grp_tasks_completed.yml
       
   ### Calculate TOHA for each lake using observed temperature data ###
   
