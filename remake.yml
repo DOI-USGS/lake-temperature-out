@@ -3,7 +3,6 @@ include:
   - 1_fetch.yml
   - 2_process.yml
   - 3_summarize.yml
-  - 4_push2sb.yml
 
 targets:
   all:
@@ -11,4 +10,3 @@ targets:
       - 1_fetch
       - 2_process
       - 3_summarize
-      - 4_push2sb
