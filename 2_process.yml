@@ -18,7 +18,7 @@ sources:
 targets:
   2_process:
     depends:
-      - 2_process/out/2_process_lake_tasks.ind
+      - 2_process/out/2_pb0_lake_tasks.ind
       - 2_process/out/2_pgdl_lake_tasks.ind
       - 2_process/out/combined_obs_toha.csv
       - 2_process/out/iceflags_unzipped.yml
@@ -45,7 +45,7 @@ targets:
       '2_process/src/munge_group_files.R',
       '2_process/src/do_lakegroup_tasks.R')
   
-  2_process/out/2_process_grp_tasks_completed.yml:
+  2_process/out/2_pb0_grp_tasks_completed.yml:
     command: do_lakegroup_tasks(
       final_target =  target_name,
       task_ids = sb_group_ids,
@@ -57,10 +57,10 @@ targets:
   
   ### Calculate TOHA for each lake ###
   
-  2_process/out/2_process_lake_tasks.ind:
+  2_process/out/2_pb0_lake_tasks.ind:
     command: do_lake_toha_tasks(
       final_target = target_name,
-      task_df_fn = '2_process/out/2_process_grp_tasks_completed.yml',
+      task_df_fn = '2_process/out/2_pb0_grp_tasks_completed.yml',
       n_cores = 40,
       '2_process/src/calculate_toha.R',
       '2_process/src/do_lake_toha_tasks.R')
