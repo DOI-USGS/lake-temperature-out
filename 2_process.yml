@@ -103,7 +103,7 @@ targets:
       obs_model = I('obs'),
       "2_process/src/observed_data_helpers_munge.R", 
       "2_process/src/calculate_toha.R",
-      "2_process/src/create_obs_lake_task_plan.R")
+      "2_process/src/do_obs_lakes_tasks.R")
     depends:
       - morphometry
   
@@ -125,7 +125,7 @@ targets:
       obs_model = I('pb0_matched2obs'),
       "2_process/src/observed_data_helpers_munge.R", 
       "2_process/src/calculate_toha.R",
-      "2_process/src/create_obs_lake_task_plan.R")
+      "2_process/src/do_obs_lakes_tasks.R")
     depends:
       - morphometry
   
@@ -147,7 +147,7 @@ targets:
       obs_model = I('pgdl_matched2obs'),
       "2_process/src/observed_data_helpers_munge.R", 
       "2_process/src/calculate_toha.R",
-      "2_process/src/create_obs_lake_task_plan.R")
+      "2_process/src/do_obs_lakes_tasks.R")
     depends:
       - morphometry
 
