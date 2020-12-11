@@ -1,5 +1,5 @@
 
-calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_file, temp_range_file, morphometry, verbose = FALSE) {
+calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_file, temp_ranges, morphometry, verbose = FALSE) {
   
   start_tm <- Sys.time()
     
@@ -34,8 +34,6 @@ calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_
     mutate(in_stratified_period = is_in_longest_consective_chunk(stratified)) %>% 
     ungroup() %>% 
     select(-year)
-  
-  temp_ranges <- read_tsv(temp_range_file)
   
   data_ready_with_flags <- data_ready %>% 
     arrange(date, depth) %>% # Data was coming in correct, but just making sure 
@@ -94,7 +92,7 @@ calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_
       post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
       date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
       metalimnion_derivatives = calc_metalimnion_derivatives(date, depth, wtr, in_stratified_period, stratification_duration, hypso),
-      simulation_length_days = calc_n_days(date, wtr),
+      open_water_duration = as.numeric(ice_on_date - ice_off_date),
       
       .groups = "keep" # suppresses message about regrouping
     ) %>% 
@@ -350,14 +348,6 @@ calc_first_day_above_temp <- function(date, wtr_surf, temperatures) {
   
   return(date_above_df)
 }
-calc_n_days <- function(date, wtr) {
-  # count days that have at least one non-NA value
-  tibble(date, wtr) %>% 
-    group_by(date) %>% 
-    summarize(data_exists = any(!is.na(wtr))) %>% 
-    pull(data_exists) %>% 
-    sum() 
-}
 
 #' @description Calculates the top and bottom depths of the metalimnion in a stratified lake in order
 #' to determine the annual mean metalimnion top and bottom depths, the annual mean volume of the epilimnion,
@@ -483,7 +473,7 @@ get_ice_onoff <- function(date, ice, peak_temp_dt, on_or_off) {
     ice_second_half <- ice_unique[date_unique > peak_temp_dt]
     
     # If there is no ice present during that part of the year, there is no ice off date because it wasn't there
-    if(!any(ice_second_half)) return(NA) #TODO: or what should we return?
+    if(!any(ice_second_half)) return(as.Date(NA)) #TODO: or what should we return?
     
     # Find start of longest ice period during second half of the year
     ice_on <- head(which(is_in_longest_consective_chunk(ice_second_half)), 1)
@@ -495,7 +485,7 @@ get_ice_onoff <- function(date, ice, peak_temp_dt, on_or_off) {
     ice_first_half <- ice_unique[date_unique <= peak_temp_dt]
     
     # If there is no ice present during that part of the year, there is no ice off date because it wasn't there
-    if(!any(ice_first_half)) return(NA) #TODO: or do we return the first day of the year?
+    if(!any(ice_first_half)) return(as.Date(NA)) #TODO: or do we return the first day of the year?
     
     # Find end of longest ice period during first half of the year
     ice_off <- tail(which(is_in_longest_consective_chunk(ice_first_half)), 1)
