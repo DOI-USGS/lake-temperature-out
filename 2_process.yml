@@ -42,7 +42,8 @@ targets:
       irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
       clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
       predictions_zips = '1_fetch/out/pgdl_temp_pred_downloaded.yml',
-      '2_process/src/munge_group_files.R')
+      '2_process/src/munge_group_files.R',
+      '2_process/src/do_lakegroup_tasks.R')
   
   2_process/out/2_process_grp_tasks_completed.yml:
     command: do_lakegroup_tasks(
@@ -51,7 +52,8 @@ targets:
       irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
       clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
       predictions_zips = '1_fetch/out/pb0_temp_pred_downloaded.yml',
-      '2_process/src/munge_group_files.R')
+      '2_process/src/munge_group_files.R',
+      '2_process/src/do_lakegroup_tasks.R')
   
   ### Calculate TOHA for each lake ###
   
@@ -60,7 +62,8 @@ targets:
       final_target = target_name,
       task_df_fn = '2_process/out/2_process_grp_tasks_completed.yml',
       n_cores = 40,
-      '2_process/src/calculate_toha.R')
+      '2_process/src/calculate_toha.R',
+      '2_process/src/do_lake_toha_tasks.R')
     depends:
       - morphometry
 
@@ -69,7 +72,8 @@ targets:
       final_target = target_name,
       task_df_fn = '2_process/out/2_pgdl_grp_tasks_completed.yml',
       n_cores = 40,
-      '2_process/src/calculate_toha.R')
+      '2_process/src/calculate_toha.R',
+      '2_process/src/do_lake_toha_tasks.R')
     depends:
       - morphometry
       
