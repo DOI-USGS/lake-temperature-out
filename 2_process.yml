@@ -10,7 +10,7 @@ packages:
 
 sources:
   - 2_process/src/process_helpers.R
-  - 2_process/src/create_group_task_plan.R
+  - 2_process/src/do_lakegroup_tasks.R
   - 2_process/src/create_lake_task_plan.R
   - 2_process/src/observed_data_helpers_prepare.R
   - 2_process/src/create_obs_lake_task_plan.R
@@ -32,51 +32,26 @@ targets:
     command: extract_morphometry("1_fetch/out/config.json")
   
   ### Munge data by each lake group ###
-  # Unzip, merge, and write feather files for each lake
-  pgdl_grp_tasks:
-    command: create_group_tasks(task_ids = sb_group_ids,
-      log_folder = I("2_process/log"),
-      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
-      clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
-      predictions_zips = '1_fetch/out/pgdl_temp_pred_downloaded.yml')
-    
-  process_grp_tasks:
-    command: create_group_tasks(task_ids = sb_group_ids, 
-      log_folder = I("2_process/log"),
-      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
-      clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
-      predictions_zips = '1_fetch/out/pb0_temp_pred_downloaded.yml')
   
-  2_pgdl_grp_tasks.yml:
-    command: create_group_task_makefile(
-      makefile = target_name, 
-      task_plan = pgdl_grp_tasks, 
-      remake_file = I('2_process.yml'),
-      final_targets = I('2_process/out/2_pgdl_grp_tasks_completed.yml'))
-      
-  2_process_grp_tasks.yml:
-    command: create_group_task_makefile(
-      makefile = target_name, 
-      task_plan = process_grp_tasks, 
-      remake_file = I('2_process.yml'),
-      final_targets = I('2_process/out/2_process_grp_tasks_completed.yml'))
+  # Unzip each lake group file, then merge and write feather files for each lake
   
   2_process/out/2_pgdl_grp_tasks_completed.yml:
-    command: scmake(
-      target_names = I('2_pgdl_grp_tasks_completed.yml_promise'),
-      remake_file = '2_pgdl_grp_tasks.yml')
-    depends: 
-      - 1_fetch/out/pgdl_temp_pred_downloaded.yml
-      - 1_fetch/out/irradiance_downloaded.yml
-      - 1_fetch/out/clarity_downloaded.yml
-      
+    command: do_lakegroup_tasks(
+      final_target =  target_name,
+      task_ids = sb_group_ids,
+      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
+      clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
+      predictions_zips = '1_fetch/out/pgdl_temp_pred_downloaded.yml',
+      '2_process/src/munge_group_files.R')
+  
   2_process/out/2_process_grp_tasks_completed.yml:
-    command: loop_tasks(task_plan = process_grp_tasks, 
-      task_makefile = '2_process_grp_tasks.yml')
-    depends: 
-      - 1_fetch/out/irradiance_downloaded.yml
-      - 1_fetch/out/pb0_temp_pred_downloaded.yml
-      - 1_fetch/out/clarity_downloaded.yml
+    command: do_lakegroup_tasks(
+      final_target =  target_name,
+      task_ids = sb_group_ids,
+      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
+      clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
+      predictions_zips = '1_fetch/out/pb0_temp_pred_downloaded.yml',
+      '2_process/src/munge_group_files.R')
   
   ### Calculate TOHA for each lake ###
   
