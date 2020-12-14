@@ -90,6 +90,6 @@ do_lakegroup_tasks <- function(final_target, task_ids, irradiance_zips, clarity_
              num_tries = 3)
   
   # Now return the file name of the final target
-  return(remake::fetch(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile))
+  return(final_target)
   
 }

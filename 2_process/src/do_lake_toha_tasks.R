@@ -82,6 +82,6 @@ do_lake_toha_tasks <- function(final_target, task_df_fn, n_cores, ...) {
              n_cores = n_cores)
   
   # Now return the file name of the final target
-  return(remake::fetch(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile))
+  return(final_target)
   
 }
