@@ -98,6 +98,15 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, obs_
     task_makefile = task_makefile,
     num_tries = 1)
   
+  # ---- clean up files created ---- #
+  
+  # Remove the temporary target from remake's DB; it won't necessarily be a unique  
+  #   name and we don't need it to persist, especially since killing the task yaml
+  scdel(sprintf("%s_promise", basename(target_name)), remake_file=task_makefile)
+  # Delete task makefile since it is only needed internally for this function and  
+  #   not needed at all once loop_tasks is complete
+  file.remove(task_makefile)
+  
 }
 
 combine_obs_toha <- function(target_name, ...) {
