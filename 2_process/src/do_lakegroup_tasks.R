@@ -89,6 +89,15 @@ do_lakegroup_tasks <- function(final_target, task_ids, irradiance_zips, clarity_
              task_makefile = task_makefile,
              num_tries = 3)
   
+  ##-- Clean up files created --##
+  
+  # Remove the temporary target from remake's DB; it won't necessarily be a unique  
+  #   name and we don't need it to persist, especially since killing the task yaml
+  scdel(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile)
+  # Delete task makefile since it is only needed internally for this function and  
+  #   not needed at all once loop_tasks is complete
+  file.remove(task_makefile)
+  
   # Now return the file name of the final target
   return(final_target)
   
