@@ -74,6 +74,15 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_
              num_tries = 1,
              n_cores = n_cores)
   
+  # Clean up files created
+  
+  # Remove the temporary target from remake's DB; it won't necessarily be a unique  
+  #   name and we don't need it to persist, especially since killing the task yaml
+  scdel(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile)
+  # Delete task makefile since it is only needed internally for this function and  
+  #   not needed at all once loop_tasks is complete
+  file.remove(task_makefile)
+  
 }
 
 combine_thermal_metrics <- function(target_name, ...) {
