@@ -74,9 +74,6 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_
              num_tries = 1,
              n_cores = n_cores)
   
-  # Now return the file name of the final the combined CSV
-  return(remake::fetch(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile))
-  
 }
 
 combine_thermal_metrics <- function(target_name, ...) {
