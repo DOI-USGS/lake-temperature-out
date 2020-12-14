@@ -1,15 +1,8 @@
-create_group_task_makefile <- function(makefile, task_plan, remake_file, final_targets) {
-  scipiper::create_task_makefile(
-    makefile=makefile, task_plan=task_plan,
-    include=remake_file,
-    packages=c("purrr", "dplyr", "readr", "feather"),
-    sources=c("2_process/src/munge_group_files.R"),
-    finalize_funs = "indicate_file_dataframes",
-    final_targets = final_targets
-  )
-}
-
-create_group_tasks <- function(task_ids, log_folder, irradiance_zips, clarity_zips, predictions_zips){
+do_lakegroup_tasks <- function(final_target, task_ids, irradiance_zips, clarity_zips, predictions_zips, ...) {
+  
+  ##-- Define task table rows --##
+  
+  # Prepare a data.frame with one row per task 
   
   group_info <- tibble(group_id = task_ids) %>% mutate(group_n = substr(group_id, 1,2))
   
@@ -32,10 +25,8 @@ create_group_tasks <- function(task_ids, log_folder, irradiance_zips, clarity_zi
     inner_join(pred_files, by = 'group_n') %>% 
     inner_join(group_info, by = 'group_n') %>% 
     mutate(task_id = sprintf("group_%s", group_n)) %>% select(-prefix)
-
-  # # prepare a data.frame with one row per task
-  # tasks <- data_frame(task_id=task_ids[1:2]) %>%
-  #   mutate(task_name = sprintf("group_%s", substr(task_id, 1,2)))
+  
+  ##-- Define task table columns --##
   
   get_lake_ids <- scipiper::create_task_step(
     step_name = 'get_lake_ids',
@@ -67,14 +58,44 @@ create_group_tasks <- function(task_ids, log_folder, irradiance_zips, clarity_zi
     } 
   )
   
-  # ---- combine into a task plan ---- #
+  ##-- Create the task plan --##
   
-  scipiper::create_task_plan(
+  task_plan <- create_task_plan(
     task_names=tasks$task_id,
     task_steps=list(
       get_lake_ids,
       combine_model_zipped_files),
     add_complete=FALSE,
-    final_steps=c('combine_model_zipped_files'),
-    ind_dir='2_process/log')
+    final_steps=c('combine_model_zipped_files'))
+  
+  ##-- Create the task remakefile --##
+  
+  task_makefile <- sprintf('2_%s_grp_tasks.yml', model_prefix)
+  create_task_makefile( 
+    task_plan=task_plan,
+    makefile=task_makefile,
+    include='remake.yml',
+    sources=c(...),
+    packages=c("purrr", "dplyr", "readr", "feather"),
+    final_targets = final_target,
+    finalize_funs = "indicate_file_dataframes",
+    as_promises = TRUE,
+    tickquote_combinee_objects = TRUE
+  )
+  
+  ##-- Build the tasks --##
+  
+  loop_tasks(task_plan = task_plan,
+             task_makefile = task_makefile,
+             num_tries = 3)
+  
+  ##-- Clean up files created --##
+  
+  # Remove the temporary target from remake's DB; it won't necessarily be a unique  
+  #   name and we don't need it to persist, especially since killing the task yaml
+  scdel(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile)
+  # Delete task makefile since it is only needed internally for this function and  
+  #   not needed at all once loop_tasks is complete
+  file.remove(task_makefile)
+  
 }

@@ -11,7 +11,7 @@ sources:
   - 3_summarize/src/calculate_total_benthic_area.R
   - 2_process/src/calculate_toha.R # Has the benthic area fxn & resample_hypso
   - 3_summarize/src/annual_thermal_metrics.R
-  - 3_summarize/src/annual_thermal_metric_tasks.R
+  - 3_summarize/src/do_annual_thermal_metric_tasks.R
 
 targets:
   3_summarize:
@@ -29,7 +29,7 @@ targets:
       target_name = target_name,
       sb_group_xwalk = sb_group_info, 
       sb_group_ids = sb_group_ids, 
-      files_to_zip_ind = '2_process/out/2_process_lake_tasks.ind',
+      files_to_zip_ind = '2_process/out/2_pb0_lake_tasks.ind',
       dest_dir = I('3_summarize/tmp'),
       zip_out_prefix = I('pb0_toha'))
 
@@ -74,7 +74,7 @@ targets:
       - temp_ranges
   
   pb0_site_files:
-    command: get_filenames_from_ind("2_process/out/2_process_grp_tasks_completed.yml")
+    command: get_filenames_from_ind("2_process/out/2_pb0_grp_tasks_completed.yml")
   3_summarize/out/annual_metrics_pb0.csv:
     command: do_annual_metrics_multi_lake(
       final_target = target_name,

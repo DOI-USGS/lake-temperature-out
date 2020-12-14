@@ -1,24 +1,22 @@
-create_lake_task_makefile <- function(makefile, task_plan, remake_file, final_targets) {
-  scipiper::create_task_makefile(
-    makefile=makefile, task_plan=task_plan,
-    include=remake_file,
-    packages=c("purrr", "dplyr", "mda.lakes", "feather", "rLakeAnalyzer"),
-    final_targets = final_targets,
-    sources=c("2_process/src/calculate_toha.R")
-  )
-}
 
-create_lake_tasks <- function(task_df_fn, log_folder){
-
+do_lake_toha_tasks <- function(final_target, task_df_fn, n_cores, ...) {
+  
+  # Each node on a Yeti normal partition has a max of 20 cores; nodes on Yeti UV partition do not have that same limit
+  if(n_cores > 20) message("If using a node on the Yeti normal partition, you need to decrease n_cores to 20 or less")
+  
+  ##-- Define task table rows --##
+  
   tasks <- tibble(task_filepath = names(yaml::yaml.load_file(task_df_fn))) %>% 
     mutate(filename = basename(task_filepath)) %>% 
     extract(filename, c('prefix','site_id','suffix'), "(pb0|pball|pgdl)_data_(.*)(.feather)", remove = FALSE) %>% 
     select(task_filepath, site_id, prefix) %>% 
     filter(nchar(task_filepath) != 0) 
-    
+  
   model_type = pull(tasks, prefix) %>% unique()
   stopifnot(length(model_type) == 1)
   toha_step_name <- sprintf('calculate_%s_toha', model_type)
+  
+  ##-- Define task table columns --##
   
   #' I'm doing this because each toha task is slow running
   #' and if `morphometry` changes, we don't want to have to re-run all of them,
@@ -53,13 +51,43 @@ create_lake_tasks <- function(task_df_fn, log_folder){
     } 
   )
   
-  # ---- combine into a task plan ---- #
+  ##-- Create the task plan --##
   
-  gif_task_plan <- scipiper::create_task_plan(
+  task_plan <- create_task_plan(
     task_names=tasks$site_id,
     task_steps=list(split_morphometry,
-      calculate_model_toha),
+                    calculate_model_toha),
     add_complete=FALSE,
-    final_steps=c(toha_step_name),
-    ind_dir='2_process/log')
+    final_steps=c(toha_step_name))
+  
+  ##-- Create the task remakefile --##
+  
+  task_makefile <- sprintf('2_%s_lake_tasks.yml', model_prefix)
+  create_task_makefile( 
+    task_plan=task_plan,
+    makefile=task_makefile,
+    include='remake.yml',
+    sources=c(...),
+    packages=c("purrr", "dplyr", "mda.lakes", "feather", "rLakeAnalyzer"),
+    final_targets = final_target,
+    as_promises = TRUE,
+    tickquote_combinee_objects = TRUE
+  )
+  
+  ##-- Build the tasks --##
+  
+  loop_tasks(task_plan = task_plan,
+             task_makefile = task_makefile,
+             num_tries = 1, 
+             n_cores = n_cores)
+  
+  ##-- Clean up files created --##
+  
+  # Remove the temporary target from remake's DB; it won't necessarily be a unique  
+  #   name and we don't need it to persist, especially since killing the task yaml
+  scdel(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile)
+  # Delete task makefile since it is only needed internally for this function and  
+  #   not needed at all once loop_tasks is complete
+  file.remove(task_makefile)
+  
 }

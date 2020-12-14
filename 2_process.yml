@@ -10,15 +10,15 @@ packages:
 
 sources:
   - 2_process/src/process_helpers.R
-  - 2_process/src/create_group_task_plan.R
-  - 2_process/src/create_lake_task_plan.R
+  - 2_process/src/do_lakegroup_tasks.R
+  - 2_process/src/do_lake_toha_tasks.R
   - 2_process/src/observed_data_helpers_prepare.R
   - 2_process/src/create_obs_lake_task_plan.R
 
 targets:
   2_process:
     depends:
-      - 2_process/out/2_process_lake_tasks.ind
+      - 2_process/out/2_pb0_lake_tasks.ind
       - 2_process/out/2_pgdl_lake_tasks.ind
       - 2_process/out/combined_obs_toha.csv
       - 2_process/out/iceflags_unzipped.yml
@@ -32,95 +32,50 @@ targets:
     command: extract_morphometry("1_fetch/out/config.json")
   
   ### Munge data by each lake group ###
-  # Unzip, merge, and write feather files for each lake
-  pgdl_grp_tasks:
-    command: create_group_tasks(task_ids = sb_group_ids,
-      log_folder = I("2_process/log"),
-      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
-      clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
-      predictions_zips = '1_fetch/out/pgdl_temp_pred_downloaded.yml')
-    
-  process_grp_tasks:
-    command: create_group_tasks(task_ids = sb_group_ids, 
-      log_folder = I("2_process/log"),
-      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
-      clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
-      predictions_zips = '1_fetch/out/pb0_temp_pred_downloaded.yml')
   
-  2_pgdl_grp_tasks.yml:
-    command: create_group_task_makefile(
-      makefile = target_name, 
-      task_plan = pgdl_grp_tasks, 
-      remake_file = I('2_process.yml'),
-      final_targets = I('2_process/out/2_pgdl_grp_tasks_completed.yml'))
-      
-  2_process_grp_tasks.yml:
-    command: create_group_task_makefile(
-      makefile = target_name, 
-      task_plan = process_grp_tasks, 
-      remake_file = I('2_process.yml'),
-      final_targets = I('2_process/out/2_process_grp_tasks_completed.yml'))
+  # Unzip each lake group file, then merge and write feather files for each lake
   
   2_process/out/2_pgdl_grp_tasks_completed.yml:
-    command: scmake(
-      target_names = I('2_pgdl_grp_tasks_completed.yml_promise'),
-      remake_file = '2_pgdl_grp_tasks.yml')
-    depends: 
-      - 1_fetch/out/pgdl_temp_pred_downloaded.yml
-      - 1_fetch/out/irradiance_downloaded.yml
-      - 1_fetch/out/clarity_downloaded.yml
-      
-  2_process/out/2_process_grp_tasks_completed.yml:
-    command: loop_tasks(task_plan = process_grp_tasks, 
-      task_makefile = '2_process_grp_tasks.yml')
-    depends: 
-      - 1_fetch/out/irradiance_downloaded.yml
-      - 1_fetch/out/pb0_temp_pred_downloaded.yml
-      - 1_fetch/out/clarity_downloaded.yml
+    command: do_lakegroup_tasks(
+      final_target =  target_name,
+      task_ids = sb_group_ids,
+      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
+      clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
+      predictions_zips = '1_fetch/out/pgdl_temp_pred_downloaded.yml',
+      '2_process/src/munge_group_files.R',
+      '2_process/src/do_lakegroup_tasks.R')
+  
+  2_process/out/2_pb0_grp_tasks_completed.yml:
+    command: do_lakegroup_tasks(
+      final_target =  target_name,
+      task_ids = sb_group_ids,
+      irradiance_zips = '1_fetch/out/irradiance_downloaded.yml', 
+      clarity_zips = '1_fetch/out/clarity_downloaded.yml', 
+      predictions_zips = '1_fetch/out/pb0_temp_pred_downloaded.yml',
+      '2_process/src/munge_group_files.R',
+      '2_process/src/do_lakegroup_tasks.R')
   
   ### Calculate TOHA for each lake ###
   
-  ## For PB0 ##
-  process_lake_tasks:
-    command: create_lake_tasks(task_df_fn = '2_process/out/2_process_grp_tasks_completed.yml', 
-      log_folder = I("2_process/log"))
-  
-  2_process_lake_tasks.yml:
-    command: create_lake_task_makefile(
-      makefile = target_name, 
-      task_plan = process_lake_tasks, 
-      remake_file = I('2_process.yml'),
-      final_targets = I('2_process/out/2_process_lake_tasks.ind'))
-  
-  2_process/out/2_process_lake_tasks.ind:
-    command: loop_tasks(task_plan = process_lake_tasks,
-      task_makefile = '2_process_lake_tasks.yml',
-      n_cores = 40)
+  2_process/out/2_pb0_lake_tasks.ind:
+    command: do_lake_toha_tasks(
+      final_target = target_name,
+      task_df_fn = '2_process/out/2_pb0_grp_tasks_completed.yml',
+      n_cores = 40,
+      '2_process/src/calculate_toha.R',
+      '2_process/src/do_lake_toha_tasks.R')
     depends:
       - morphometry
-      - 2_process/out/2_process_grp_tasks_completed.yml
 
-  ## For PGDL ##
-  pgdl_lake_tasks:
-    command: create_lake_tasks(task_df_fn = '2_process/out/2_pgdl_grp_tasks_completed.yml', 
-      log_folder = I("2_process/log"))
-  
-  2_pgdl_lake_tasks.yml:
-    command: create_lake_task_makefile(
-      makefile = target_name, 
-      task_plan = pgdl_lake_tasks, 
-      remake_file = I('2_process.yml'),
-      final_targets = I('2_process/out/2_pgdl_lake_tasks.ind'))
-  
-  #'2_process/tmp/pgdl_toha_nhdhr_120018569.csv', FAILED!!!Error in seq.int(0, to0 - from, by) : 'to' must be a finite number
-  #In addition: There were 50 or more warnings (use warnings() to see the first 50)
   2_process/out/2_pgdl_lake_tasks.ind:
-    command: loop_tasks(task_plan = pgdl_lake_tasks,
-      task_makefile = '2_pgdl_lake_tasks.yml',
-      n_cores = 40)
+    command: do_lake_toha_tasks(
+      final_target = target_name,
+      task_df_fn = '2_process/out/2_pgdl_grp_tasks_completed.yml',
+      n_cores = 40,
+      '2_process/src/calculate_toha.R',
+      '2_process/src/do_lake_toha_tasks.R')
     depends:
       - morphometry
-      - 2_process/out/2_pgdl_grp_tasks_completed.yml
       
   ### Calculate TOHA for each lake using observed temperature data ###
   
@@ -152,7 +107,7 @@ targets:
       obs_model = I('obs'),
       "2_process/src/observed_data_helpers_munge.R", 
       "2_process/src/calculate_toha.R",
-      "2_process/src/create_obs_lake_task_plan.R")
+      "2_process/src/do_obs_lakes_tasks.R")
     depends:
       - morphometry
   
@@ -174,7 +129,7 @@ targets:
       obs_model = I('pb0_matched2obs'),
       "2_process/src/observed_data_helpers_munge.R", 
       "2_process/src/calculate_toha.R",
-      "2_process/src/create_obs_lake_task_plan.R")
+      "2_process/src/do_obs_lakes_tasks.R")
     depends:
       - morphometry
   
@@ -196,7 +151,7 @@ targets:
       obs_model = I('pgdl_matched2obs'),
       "2_process/src/observed_data_helpers_munge.R", 
       "2_process/src/calculate_toha.R",
-      "2_process/src/create_obs_lake_task_plan.R")
+      "2_process/src/do_obs_lakes_tasks.R")
     depends:
       - morphometry
 
