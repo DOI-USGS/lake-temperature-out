@@ -24,6 +24,8 @@ targets:
   sb_dl_date:
    command: c(I("2020-04-29"))
   
+  ##-- Download files for mntoha data release --##
+  
   toha_sbid:
     command: c(I("5e5d0bb9e4b01d50924f2b36"))
   clarity_ice_sbid:
@@ -82,6 +84,15 @@ targets:
       keyword = I("ice_flags"), 
       dest_folder = I("1_fetch/tmp"),
       dummy = sb_dl_date)
+  
+  ##-- Download files for multi-state glm2 data release --##
+  
+  preds_sbid:
+    command: c(I("5db819a8e4b0b0c58b5a4c45"))
+  ice_sbid:
+    command: c(I("5db81996e4b0b0c58b5a4c43"))
+  # Delete this. No clarity data but are there irradiance data?
+  # TODO: Pick up here on Monday.
   
   ##-- Download files for error estimation --##
   
