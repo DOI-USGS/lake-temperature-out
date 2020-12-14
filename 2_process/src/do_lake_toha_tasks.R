@@ -90,7 +90,4 @@ do_lake_toha_tasks <- function(final_target, task_df_fn, n_cores, ...) {
   #   not needed at all once loop_tasks is complete
   file.remove(task_makefile)
   
-  # Now return the file name of the final target
-  return(final_target)
-  
 }
