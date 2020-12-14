@@ -79,9 +79,10 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, obs_
   
   # ---- combine into a task makefile ---- #
   
+  task_makefile <- sprintf('2_%s_lake_tasks.yml', obs_model)
   create_task_makefile(
     task_plan = task_plan,
-    makefile = sprintf('2_%s_lake_tasks.yml', obs_model),
+    makefile = task_makefile,
     include = 'remake.yml',
     sources = c(...),
     packages = c("purrr", "dplyr", "mda.lakes", "feather", "rLakeAnalyzer", "readr"),
@@ -94,7 +95,7 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, obs_
   
   loop_tasks(
     task_plan = task_plan,
-    task_makefile = sprintf('2_%s_lake_tasks.yml', obs_model),
+    task_makefile = task_makefile,
     num_tries = 1)
   
 }
