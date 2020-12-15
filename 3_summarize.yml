@@ -11,7 +11,7 @@ sources:
   - 3_summarize/src/calculate_total_benthic_area.R
   - 2_process/src/calculate_toha.R # Has the benthic area fxn & resample_hypso
   - 3_summarize/src/annual_thermal_metrics.R
-  - 3_summarize/src/annual_thermal_metric_tasks.R
+  - 3_summarize/src/do_annual_thermal_metric_tasks.R
 
 targets:
   3_summarize:

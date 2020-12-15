@@ -81,7 +81,13 @@ do_lake_toha_tasks <- function(final_target, task_df_fn, n_cores, ...) {
              num_tries = 1, 
              n_cores = n_cores)
   
-  # Now return the file name of the final target
-  return(remake::fetch(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile))
+  ##-- Clean up files created --##
+  
+  # Remove the temporary target from remake's DB; it won't necessarily be a unique  
+  #   name and we don't need it to persist, especially since killing the task yaml
+  scdel(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile)
+  # Delete task makefile since it is only needed internally for this function and  
+  #   not needed at all once loop_tasks is complete
+  file.remove(task_makefile)
   
 }
