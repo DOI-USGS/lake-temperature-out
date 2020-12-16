@@ -115,7 +115,13 @@ optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper, cum_ba) {
   completely_above_lake <- I_0 < I_lower # if OHA is completely above lake, benthic area is 0 (too dark)
   benth_0 <- completely_below_lake | completely_above_lake
   
-  # If I_0 == 0, then Z1 and Z1 become -Inf. They should be
+  # If completely above or completely below, the Zs need to reflect that
+  Z1[completely_below_lake] <- z_max
+  Z2[completely_below_lake] <- z_max
+  Z1[completely_above_lake] <- z_surface
+  Z2[completely_above_lake] <- z_surface
+  
+  # If I_0 == 0, then Z1 and Z2 become -Inf. They should be
   #   be 0 before we return to a user. 
   Z1[I_0 == 0] <- 0
   Z2[I_0 == 0] <- 0
@@ -183,6 +189,12 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper, cum_ba) {
   completely_below_lake <- wtr_bottom > wtr_upper # if THA is completely below lake, benthic area is 0 (too hot)
   completely_above_lake <- wtr_surface < wtr_lower # if THA is completely above lake, benthic area is 0 (too cold)
   benth_0 <- completely_below_lake | completely_above_lake
+  
+  # If completely above or completely below, the Zs need to reflect that
+  Z1[completely_below_lake] <- z_max
+  Z2[completely_below_lake] <- z_max
+  Z1[completely_above_lake] <- z_surface
+  Z2[completely_above_lake] <- z_surface
   
   # if THA extends above lake, use the surface as Z1 to calc THA
   extends_above_lake <- wtr_surface < wtr_upper & !completely_above_lake

@@ -529,6 +529,12 @@ find_Z1_Z2 <- function(wtr, depth, wtr_upper_bound, wtr_lower_bound) {
     completely_below_lake <- wtr_bottom > wtr_upper_bound # if THA is completely below lake, benthic area is 0 (too hot)
     completely_above_lake <- wtr_surface < wtr_lower_bound # if THA is completely above lake, benthic area is 0 (too cold)
     
+    # If completely above or completely below, the Zs need to reflect that
+    Z1[completely_below_lake] <- z_max
+    Z2[completely_below_lake] <- z_max
+    Z1[completely_above_lake] <- z_surface
+    Z2[completely_above_lake] <- z_surface
+    
     # if THA extends above lake, use the surface as Z1 to calc THA
     extends_above_lake <- wtr_surface < wtr_upper_bound & !completely_above_lake
     Z1[extends_above_lake] <- z_surface
