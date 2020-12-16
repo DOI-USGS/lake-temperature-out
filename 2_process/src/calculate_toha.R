@@ -89,19 +89,9 @@ opti_thermal_habitat_subdaily <- function(current_date, wtr, io, kd, lat, lon, h
   tha_daily <- tha_df$habitat/nrow(tha_df) # should be the same before/after division since tha_df is already daily
   toha_daily <- sum(toha)/length(toha)
   
-  # Output depths for where habitat exists (get average depth per day)
-  oha_Z1_daily <- sum(oha_df$Z1, na.rm = TRUE)/nrow(oha_df) 
-  oha_Z2_daily <- sum(oha_df$Z2, na.rm = TRUE)/nrow(oha_df) 
-  tha_Z1_daily <- sum(tha_df$Z1, na.rm = TRUE)/nrow(tha_df) 
-  tha_Z2_daily <- sum(tha_df$Z2, na.rm = TRUE)/nrow(tha_df) 
-  
   return(data.frame(opti_hab = oha_daily, 
                     therm_hab = tha_daily, 
-                    opti_therm_hab = toha_daily,
-                    opti_Z1 = oha_Z1_daily,
-                    opti_Z2 = oha_Z2_daily,
-                    therm_Z1 = tha_Z1_daily,
-                    therm_Z2 = tha_Z2_daily))
+                    opti_therm_hab = toha_daily))
   
 }
 
@@ -125,7 +115,13 @@ optical_habitat_area <- function(I_0, Kd, hypso, I_lower, I_upper, cum_ba) {
   completely_above_lake <- I_0 < I_lower # if OHA is completely above lake, benthic area is 0 (too dark)
   benth_0 <- completely_below_lake | completely_above_lake
   
-  # If I_0 == 0, then Z1 and Z1 become -Inf. They should be
+  # If completely above or completely below, the Zs need to reflect that
+  Z1[completely_below_lake] <- z_max
+  Z2[completely_below_lake] <- z_max
+  Z1[completely_above_lake] <- z_surface
+  Z2[completely_above_lake] <- z_surface
+  
+  # If I_0 == 0, then Z1 and Z2 become -Inf. They should be
   #   be 0 before we return to a user. 
   Z1[I_0 == 0] <- 0
   Z2[I_0 == 0] <- 0
@@ -193,6 +189,12 @@ thermal_habitat_area <- function(wtr_df, hypso, wtr_lower, wtr_upper, cum_ba) {
   completely_below_lake <- wtr_bottom > wtr_upper # if THA is completely below lake, benthic area is 0 (too hot)
   completely_above_lake <- wtr_surface < wtr_lower # if THA is completely above lake, benthic area is 0 (too cold)
   benth_0 <- completely_below_lake | completely_above_lake
+  
+  # If completely above or completely below, the Zs need to reflect that
+  Z1[completely_below_lake] <- z_max
+  Z2[completely_below_lake] <- z_max
+  Z1[completely_above_lake] <- z_surface
+  Z2[completely_above_lake] <- z_surface
   
   # if THA extends above lake, use the surface as Z1 to calc THA
   extends_above_lake <- wtr_surface < wtr_upper & !completely_above_lake
