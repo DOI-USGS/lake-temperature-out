@@ -62,7 +62,7 @@ do_lake_toha_tasks <- function(final_target, task_df_fn, n_cores, ...) {
   
   ##-- Create the task remakefile --##
   
-  task_makefile <- sprintf('2_%s_lake_tasks.yml', model_prefix)
+  task_makefile <- sprintf('2_%s_lake_tasks.yml', model_type)
   create_task_makefile( 
     task_plan=task_plan,
     makefile=task_makefile,
