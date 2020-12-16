@@ -121,8 +121,6 @@ targets:
   
   # Add prefix to multi-file downloads in case previous 
   #  pb0 ones (from mntoha release) are named the same
-  glm2_preds_prefix:
-    command: c(I("glm2"))
   
   # This contains PB0 GLM2 and PBALL data in each zip.
   1_fetch/out/glm2_pb0_pball_temp_pred_downloaded.yml:
@@ -132,7 +130,7 @@ targets:
       keyword = I("predictions"), 
       dest_folder = I("1_fetch/tmp"),
       dummy = sb_dl_date,
-      dest_file_prefix = glm2_preds_prefix)
+      dest_file_prefix = I("glm2"))
   
   1_fetch/out/glm2_iceflags_downloaded.yml:
     command: download_sb_files(
@@ -141,7 +139,7 @@ targets:
       keyword = I("ice_flags"), 
       dest_folder = I("1_fetch/tmp"),
       dummy = sb_dl_date,
-      dest_file_prefix = glm2_preds_prefix)
+      dest_file_prefix = I("glm2"))
   
   ##-- Download files for error estimation --##
   
