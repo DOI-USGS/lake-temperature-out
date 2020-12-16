@@ -99,14 +99,10 @@ targets:
   
   glm2_pb0_files:
     command: get_filenames_from_ind("2_process/out/2_glm2_pb0_unzipped.yml")
-  test_i:
-    command: c(1,2)
-  test_files:
-    command: glm2_pb0_files[test_i]
   3_summarize/out/annual_metrics_glm2pb0.csv:
     command: do_annual_metrics_multi_lake(
       final_target = target_name,
-      site_files = test_files,
+      site_files = glm2_pb0_files,
       ice_files = glm2_ice_files,
       n_cores = 40,
       site_file_regex = I("(pb0)_(.*)_temperatures(.csv)"),
