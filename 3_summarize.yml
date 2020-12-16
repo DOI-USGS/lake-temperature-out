@@ -60,8 +60,10 @@ targets:
   # Based these additional metrics on the ones included in a previous lake modeling
   # data release (see https://www.sciencebase.gov/catalog/item/57d9e887e4b090824ffb1098)
 
-  temp_ranges:
+  temp_range_info:
     command: read_tsv("3_summarize/in/temp_ranges_for_metrics.txt")
+  temp_ranges:
+    command: select(temp_range_info, I('Temp_Low'), I('Temp_High'))
   
   ice_files:
     command: get_filenames_from_ind("2_process/out/iceflags_unzipped.yml")
