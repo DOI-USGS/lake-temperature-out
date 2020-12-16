@@ -16,11 +16,17 @@ sources:
 targets:
   3_summarize:
     depends:
+    # mntoha data release targets
       - 3_summarize/out/3_summarize_zip_pb0_toha.yml
       - 3_summarize/out/3_summarize_zip_pgdl_toha.yml
       - 3_summarize/out/total_benthic_areas.csv
       - 3_summarize/out/annual_metrics_pgdl.csv
       - 3_summarize/out/annual_metrics_pb0.csv
+    # multi-state glm2 data release targets
+      - 3_summarize/out/annual_metrics_glm2pb0.csv
+      - 3_summarize/out/annual_metrics_glm2pball.csv
+
+##-- MN TOHA Data Release --##
 
   ### Zip up lake toha files by lake group ###
   
@@ -81,6 +87,49 @@ targets:
       site_files = pb0_site_files,
       ice_files = ice_files,
       n_cores = 40,
+      '2_process/src/calculate_toha.R',
+      '3_summarize/src/annual_thermal_metrics.R')
+    depends:
+      - temp_ranges
+
+##-- Multi-state GLM2 Data Release --##
+
+  glm2_ice_files:
+    command: get_filenames_from_ind("2_process/out/glm2_iceflags_unzipped.yml")
+  
+  glm2_pb0_files:
+    command: get_filenames_from_ind("2_process/out/2_glm2_pb0_unzipped.yml")
+  test_i:
+    command: c(1,2)
+  test_files:
+    command: glm2_pb0_files[test_i]
+  3_summarize/out/annual_metrics_glm2pb0.csv:
+    command: do_annual_metrics_multi_lake(
+      final_target = target_name,
+      site_files = test_files,
+      ice_files = glm2_ice_files,
+      n_cores = 40,
+      site_file_regex = I("(pb0)_(.*)_temperatures(.csv)"),
+      ice_file_regex = I("pb0_(.*)_ice_flag.csv"),
+      morph_prefix = I("glm2_pb0_"), 
+      tmpdir_suffix = I("_glm2"),
+      '2_process/src/calculate_toha.R',
+      '3_summarize/src/annual_thermal_metrics.R')
+    depends:
+      - temp_ranges
+      
+  glm2_pball_files:
+    command: get_filenames_from_ind("2_process/out/2_glm2_pball_unzipped.yml")
+  3_summarize/out/annual_metrics_glm2pball.csv:
+    command: do_annual_metrics_multi_lake(
+      final_target = target_name,
+      site_files = glm2_pball_files,
+      ice_files = glm2_ice_files,
+      n_cores = 40,
+      site_file_regex = I("(pball)_(.*)_temperatures(.csv)"),
+      ice_file_regex = I("pball_(.*)_ice_flag.csv"),
+      morph_prefix = I("glm2_pball_"), 
+      tmpdir_suffix = I("_glm2"),
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
     depends:

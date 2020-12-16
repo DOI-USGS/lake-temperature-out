@@ -11,12 +11,20 @@ sources:
 targets:
   1_fetch:
     depends:
+    # mntoha data release targets
       - 1_fetch/out/lake_metadata.csv
       - 1_fetch/out/config.json
       - 1_fetch/out/irradiance_downloaded.yml
       - 1_fetch/out/pb0_temp_pred_downloaded.yml
       - 1_fetch/out/clarity_downloaded.yml
       - 1_fetch/out/iceflags_downloaded.yml
+      - 1_fetch/out/glm2_lake_metadata.csv
+    # multi-state glm2 data release targets
+      - 1_fetch/out/glm2_pb0_config.json
+      - 1_fetch/out/glm2_pball_config.json
+      - 1_fetch/out/glm2_pb0_pball_temp_pred_downloaded.yml
+      - 1_fetch/out/glm2_iceflags_downloaded.yml
+    # error estimation temp data targets
       - 1_fetch/out/temperature_observations.zip
       - 1_fetch/out/pb0_matched_to_observations.zip
       - 1_fetch/out/pgdl_matched_to_observations.zip
@@ -87,12 +95,53 @@ targets:
   
   ##-- Download files for multi-state glm2 data release --##
   
-  preds_sbid:
-    command: c(I("5db819a8e4b0b0c58b5a4c45"))
-  ice_sbid:
-    command: c(I("5db81996e4b0b0c58b5a4c43"))
-  # Delete this. No clarity data but are there irradiance data?
-  # TODO: Pick up here on Monday.
+  1_fetch/out/glm2_lake_metadata.csv:
+    command: download_sb_single_file(
+      target_name = target_name,
+      sb_id = I("5db8194be4b0b0c58b5a4c3c"), 
+      sb_filename = I('01_lake_metadata.csv'),
+      dummy = sb_dl_date)
+  
+  glm2_config_sbid:
+    command: c(I("5db81967e4b0b0c58b5a4c3f"))
+  
+  1_fetch/out/glm2_pb0_config.json:
+    command: download_sb_single_file(
+      target_name = target_name,
+      sb_id = glm2_config_sbid, 
+      sb_filename = I('pb0_config.json'),
+      dummy = sb_dl_date)
+  
+  1_fetch/out/glm2_pball_config.json:
+    command: download_sb_single_file(
+      target_name = target_name,
+      sb_id = glm2_config_sbid, 
+      sb_filename = I('pball_config.json'),
+      dummy = sb_dl_date)
+  
+  # Add prefix to multi-file downloads in case previous 
+  #  pb0 ones (from mntoha release) are named the same
+  glm2_preds_prefix:
+    command: c(I("glm2"))
+  
+  # This contains PB0 GLM2 and PBALL data in each zip.
+  1_fetch/out/glm2_pb0_pball_temp_pred_downloaded.yml:
+    command: download_sb_files(
+      target_name = target_name, 
+      sb_id = I("5db819a8e4b0b0c58b5a4c45"), 
+      keyword = I("predictions"), 
+      dest_folder = I("1_fetch/tmp"),
+      dummy = sb_dl_date,
+      dest_file_prefix = glm2_preds_prefix)
+  
+  1_fetch/out/glm2_iceflags_downloaded.yml:
+    command: download_sb_files(
+      target_name = target_name, 
+      sb_id = I("5db81996e4b0b0c58b5a4c43"), 
+      keyword = I("ice_flags"), 
+      dest_folder = I("1_fetch/tmp"),
+      dummy = sb_dl_date,
+      dest_file_prefix = glm2_preds_prefix)
   
   ##-- Download files for error estimation --##
   

@@ -18,10 +18,18 @@ sources:
 targets:
   2_process:
     depends:
+    # mntoha data release targets
       - 2_process/out/2_pb0_lake_tasks.ind
       - 2_process/out/2_pgdl_lake_tasks.ind
-      - 2_process/out/combined_obs_toha.csv
       - 2_process/out/iceflags_unzipped.yml
+    # multi-state glm2 data release targets
+      - 2_process/out/2_glm2_pb0_unzipped.yml
+      - 2_process/out/2_glm2_pball_unzipped.yml
+      - 2_process/out/glm2_iceflags_unzipped.yml
+    # error estimation temp data targets
+      - 2_process/out/combined_obs_toha.csv
+  
+##-- MN TOHA Data Release --##
   
   sb_group_info:
     command: read_csv("1_fetch/out/lake_metadata.csv")
@@ -76,7 +84,59 @@ targets:
       '2_process/src/do_lake_toha_tasks.R')
     depends:
       - morphometry
+
+  ### Prepare ice flags for use in 3_summary ###
+  
+  2_process/out/iceflags_unzipped.yml:
+    command: unzip_data(
+      target_name = target_name,
+      data_file = "1_fetch/out/iceflags_downloaded.yml",
+      out_dir = I("2_process/tmp"))
+  
+##-- Multi-state GLM2 Data Release --##
+  
+  glm2_sb_group_info:
+    command: read_csv("1_fetch/out/glm2_lake_metadata.csv")
+  glm2_sb_group_ids:
+    command: get_group_ids(glm2_sb_group_info)
+    
+  glm2_pb0_morphometry:
+    command: extract_morphometry("1_fetch/out/glm2_pb0_config.json")  
+  glm2_pball_morphometry:
+    command: extract_morphometry("1_fetch/out/glm2_pball_config.json")
+  
+  ### Munge data by each lake group ###
+  
+  # Unzip each lake group file, then subset into a yml for pb0 and one for pball
+  
+  2_process/out/2_glm2_pb0_pball_unzipped.yml:
+    command: unzip_data(
+      target_name = target_name,
+      data_file = "1_fetch/out/glm2_pb0_pball_temp_pred_downloaded.yml",
+      out_dir = I("2_process/tmp_glm2"))
       
+  2_process/out/2_glm2_pb0_unzipped.yml:
+    command: subset_yml(
+      target_name = target_name,
+      full_yml = "2_process/out/2_glm2_pb0_pball_unzipped.yml",
+      regex = I("pb0_"))
+  
+  2_process/out/2_glm2_pball_unzipped.yml:
+    command: subset_yml(
+      target_name = target_name,
+      full_yml = "2_process/out/2_glm2_pb0_pball_unzipped.yml",
+      regex = I("pball_"))
+  
+  # Prepare ice flags for use in 3_summary. Contains pb0 and pball 
+  # ice flags, but those are handled in 3_summarize with the regex.
+  2_process/out/glm2_iceflags_unzipped.yml:
+    command: unzip_data(
+      target_name = target_name,
+      data_file = "1_fetch/out/glm2_iceflags_downloaded.yml",
+      out_dir = I("2_process/tmp"))
+      
+##-- Munge files for error estimation --##
+
   ### Calculate TOHA for each lake using observed temperature data ###
   
   ## Prepare irradiance and clarity data for merging with observed temp by unzipping individual lake files ##
@@ -154,11 +214,3 @@ targets:
       "2_process/src/do_obs_lakes_tasks.R")
     depends:
       - morphometry
-
-  ## Prepare ice flags for use in 3_summary
-  
-  2_process/out/iceflags_unzipped.yml:
-    command: unzip_data(
-      target_name = target_name,
-      data_file = "1_fetch/out/iceflags_downloaded.yml",
-      out_dir = I("2_process/tmp"))

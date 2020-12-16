@@ -1,13 +1,22 @@
 
-do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_cores, ...) {
+do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_cores, 
+                                         site_file_regex = NULL, ice_file_regex = NULL,
+                                         morph_prefix = "", tmpdir_suffix = "", ...) {
   
   # Each node on a Yeti normal partition has a max of 20 cores; nodes on Yeti UV partition do not have that same limit
   if(n_cores > 20) message("If using a node on the Yeti normal partition, you need to decrease n_cores to 20 or less")
-
+  
+  if(is.null(site_file_regex)) {
+    site_file_regex <- "(pb0|pball|pgdl)_data_(.*)(.feather)"
+  }
+  if(is.null(ice_file_regex)) {
+    ice_file_regex <- "pb0_(.*)_ice_flags.csv"
+  }
+  
   # Define task table rows
   tasks <- tibble(wtr_filename = site_files) %>% 
-    extract(wtr_filename, c('prefix','site_id','suffix'), "(pb0|pball|pgdl)_data_(.*)(.feather)", remove = FALSE) %>% 
-    left_join(extract(tibble(ice_filename = ice_files), ice_filename, c('site_id'), "pb0_(.*)_ice_flags.csv", remove = FALSE), by = "site_id") %>% 
+    extract(wtr_filename, c('prefix','site_id','suffix'), site_file_regex, remove = FALSE) %>% 
+    left_join(extract(tibble(ice_filename = ice_files), ice_filename, c('site_id'), ice_file_regex, remove = FALSE), by = "site_id") %>% 
     select(site_id, wtr_filename, ice_filename, prefix)
   
   model_type <- pull(tasks, prefix) %>% unique()
@@ -24,14 +33,14 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_
       sprintf("%s_morphometry", task_name)
     },
     command = function(task_name, ...){
-      sprintf("morphometry[[I('%s')]]", task_name)
+      sprintf("%smorphometry[[I('%s')]]", morph_prefix, task_name)
     } 
   )
   
   calc_annual_metrics <- create_task_step(
     step_name = 'calc_annual_metrics',
     target_name = function(task_name, step_name, ...) {
-      sprintf("3_summarize/tmp/%s_%s_annual_thermal_metrics.rds", model_type, task_name)
+      sprintf("3_summarize/tmp%s/%s_%s_annual_thermal_metrics.rds", tmpdir_suffix, model_type, task_name)
     },
     command = function(..., task_name, steps) {
       task_info <- filter(tasks, site_id == task_name)
