@@ -1,7 +1,7 @@
 
-do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_cores, 
+do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_cores, ...,
                                          site_file_regex = NULL, ice_file_regex = NULL,
-                                         morph_prefix = "", tmpdir_suffix = "", ...) {
+                                         morph_prefix = "", tmpdir_suffix = "") {
   
   # Each node on a Yeti normal partition has a max of 20 cores; nodes on Yeti UV partition do not have that same limit
   if(n_cores > 20) message("If using a node on the Yeti normal partition, you need to decrease n_cores to 20 or less")
