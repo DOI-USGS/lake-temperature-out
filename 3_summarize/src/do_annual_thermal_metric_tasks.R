@@ -50,7 +50,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_
                "site_file = '%s'," = task_info$wtr_filename,
                "ice_file = '%s'," = task_info$ice_filename,
                "temp_ranges = temp_ranges,",
-               "morphometry_ind = `%s`," = steps[["split_morphometry"]]$target_name,
+               "morphometry_ind = '%s'," = steps[["split_morphometry"]]$target_name,
                # Doesn't actually print to console with `loop_tasks` but let's you see if you are troubleshooting individual files
                "verbose = I(TRUE))" 
       )
