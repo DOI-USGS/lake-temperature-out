@@ -117,7 +117,9 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
                     round(as.numeric(Sys.time() - start_tm, units = "mins"), 2)))
   }
   
-  saveRDS(annual_metrics, as_data_file(out_ind))
+  data_file <- as_data_file(out_ind)
+  saveRDS(annual_metrics, data_file)
+  sc_indicate(ind_file = out_ind, data_file = data_file)
 
 }
 

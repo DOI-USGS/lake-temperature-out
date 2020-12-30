@@ -30,7 +30,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_
     step_name = 'split_morphometry',
     target_name = function(task_name, step_name, ...){
       
-      sprintf("%s_morphometry.rds.ind", task_name)
+      sprintf("3_summarize/tmp%s/%s_morphometry.rds.ind", tmpdir_suffix, task_name)
     },
     command = function(task_name, ...){
       sprintf("split_and_save_morphometry(target_name, %smorphometry, I('%s'))", morph_prefix, task_name)
@@ -62,8 +62,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_
     task_names = tasks$site_id,
     task_steps = list(split_morphometry, calc_annual_metrics),
     final_steps = c('calc_annual_metrics'),
-    ind_dir = c('3_summarize/log'),
-    add_complete = TRUE)
+    add_complete = FALSE)
   
   # Create the task remakefile
   task_makefile <- sprintf('3_summarize_%s_metric_tasks.yml', model_type)
@@ -100,5 +99,7 @@ combine_thermal_metrics <- function(target_name, ...) {
 }
 
 split_and_save_morphometry <- function(out_ind, morphometry, site_id) {
-  saveRDS(morphometry[[site_id]], as_data_file(out_ind))
+  data_file <- as_data_file(out_ind)
+  saveRDS(morphometry[[site_id]], data_file)
+  sc_indicate(ind_file = out_ind, data_file = data_file)
 }
