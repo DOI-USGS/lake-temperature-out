@@ -30,27 +30,27 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_
     step_name = 'split_morphometry',
     target_name = function(task_name, step_name, ...){
       
-      sprintf("%s_morphometry", task_name)
+      sprintf("%s_morphometry.rds.ind", task_name)
     },
     command = function(task_name, ...){
-      sprintf("%smorphometry[[I('%s')]]", morph_prefix, task_name)
+      sprintf("split_morphometry(target_name, %smorphometry, I('%s'))", morph_prefix, task_name)
     } 
   )
   
   calc_annual_metrics <- create_task_step(
     step_name = 'calc_annual_metrics',
     target_name = function(task_name, step_name, ...) {
-      sprintf("3_summarize/tmp%s/%s_%s_annual_thermal_metrics.rds", tmpdir_suffix, model_type, task_name)
+      sprintf("3_summarize/tmp%s/%s_%s_annual_thermal_metrics.rds.ind", tmpdir_suffix, model_type, task_name)
     },
     command = function(..., task_name, steps) {
       task_info <- filter(tasks, site_id == task_name)
       psprintf("calculate_annual_metrics_per_lake(", 
-               "out_file = target_name,",
+               "out_ind = target_name,",
                "site_id = I('%s')," = task_name,
                "site_file = '%s'," = task_info$wtr_filename,
                "ice_file = '%s'," = task_info$ice_filename,
                "temp_ranges = temp_ranges,",
-               "morphometry = `%s`," = steps[["split_morphometry"]]$target_name,
+               "morphometry_ind = `%s`," = steps[["split_morphometry"]]$target_name,
                # Doesn't actually print to console with `loop_tasks` but let's you see if you are troubleshooting individual files
                "verbose = I(TRUE))" 
       )
@@ -71,7 +71,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_
     makefile = task_makefile,
     include = 'remake.yml',
     sources = c(...),
-    packages = c('tidyverse', 'purrr', 'readr'),
+    packages = c('tidyverse', 'purrr', 'readr', 'scipiper'),
     final_targets = final_target,
     finalize_funs = 'combine_thermal_metrics',
     as_promises = TRUE,
@@ -95,5 +95,9 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_
 }
 
 combine_thermal_metrics <- function(target_name, ...) {
-  purrr::map(list(...), readRDS) %>% purrr::reduce(bind_rows) %>% readr::write_csv(target_name)
+  purrr::map(list(...), function(ind) readRDS(sc_retrieve(ind))) %>% purrr::reduce(bind_rows) %>% readr::write_csv(target_name)
+}
+
+split_morphometry <- function(out_ind, morphometry, site_id) {
+  saveRDS(morphometry[[site_id]], as_data_file(out_ind))
 }
