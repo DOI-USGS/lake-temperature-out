@@ -95,7 +95,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_
 }
 
 combine_thermal_metrics <- function(target_name, ...) {
-  purrr::map(list(...), function(ind) readRDS(sc_retrieve(ind))) %>% purrr::reduce(bind_rows) %>% readr::write_csv(target_name)
+  purrr::map(list(...), function(ind) readRDS(as_data_file(ind))) %>% purrr::reduce(bind_rows) %>% readr::write_csv(target_name)
 }
 
 split_and_save_morphometry <- function(out_ind, morphometry, site_id) {
