@@ -23,7 +23,7 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
   stopifnot(nrow(data_ready) > 0) # There should be data for each site file
   
   # Get hypso for this site
-  morphometry <- as_data_file(morphometry_ind)
+  morphometry <- readRDS(as_data_file(morphometry_ind))
   hypso <- data.frame(H = morphometry$H, A = morphometry$A) %>% 
     mutate(depths = max(H) - H, areas = A) %>% 
     arrange(depths) %>% 
