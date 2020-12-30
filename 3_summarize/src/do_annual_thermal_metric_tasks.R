@@ -62,7 +62,8 @@ do_annual_metrics_multi_lake <- function(final_target, site_files, ice_files, n_
     task_names = tasks$site_id,
     task_steps = list(split_morphometry, calc_annual_metrics),
     final_steps = c('calc_annual_metrics'),
-    add_complete = FALSE)
+    ind_dir = c('3_summarize/log'),
+    add_complete = TRUE)
   
   # Create the task remakefile
   task_makefile <- sprintf('3_summarize_%s_metric_tasks.yml', model_type)
