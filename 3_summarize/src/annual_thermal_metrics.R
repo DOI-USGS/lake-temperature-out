@@ -1,5 +1,5 @@
 
-calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_file, temp_ranges, morphometry_ind, verbose = FALSE) {
+calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_file, temp_ranges_file, morphometry_ind, verbose = FALSE) {
   
   start_tm <- Sys.time()
   
@@ -28,6 +28,9 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
     mutate(depths = max(H) - H, areas = A) %>% 
     arrange(depths) %>% 
     select(depths, areas)
+  
+  # Read in temp ranges to use
+  temp_ranges <- readRDS(temp_ranges_file)
   
   data_stratification_ice <- data_ready %>% 
     group_by(date) %>% 

@@ -107,14 +107,13 @@ targets:
       site_files = glm2_pb0_files,
       ice_files = glm2_ice_files,
       n_cores = 40,
+      morphometry = glm2_pb0_morphometry,
+      temp_ranges = temp_ranges,
       site_file_regex = I("(pb0)_(.*)_temperatures(.csv)"),
       ice_file_regex = I("pb0_(.*)_ice_flag.csv"),
-      morph_prefix = I("glm2_pb0_"), 
       tmpdir_suffix = I("_glm2"),
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
-    depends:
-      - temp_ranges
       
   glm2_pball_files:
     command: get_filenames_from_ind("2_process/out/2_glm2_pball_unzipped.yml")
