@@ -113,7 +113,8 @@ targets:
       ice_file_regex = I("pb0_(.*)_ice_flag.csv"),
       tmpdir_suffix = I("_glm2"),
       '2_process/src/calculate_toha.R',
-      '3_summarize/src/annual_thermal_metrics.R')
+      '3_summarize/src/annual_thermal_metrics.R',
+      '3_summarize/src/do_annual_thermal_metric_tasks.R')
       
   glm2_pball_files:
     command: get_filenames_from_ind("2_process/out/2_glm2_pball_unzipped.yml")
