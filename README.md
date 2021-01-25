@@ -80,6 +80,12 @@ and copy the first line printed out by that script (begins with `ssh`). Note tha
 ```
 Enter the command. Note that this terminal is now tied up.
 
+3. Copy one of the final URLs printed out by the launch-jlab.sh script in Terminal #2, and paste it into a local browser window. Will look like this:
+```
+http://igskmncmpshtl01:8528/?token=962bc58cf87016fa35075ecd64cec5597e805bd1ecbce0ca
+```
+Be patient as the interface loads. Once you're in, you can edit files, create notebooks, etc. with the Jupyter Lab IDE.
+
 #### Creating a conda Jupyter Lab environment (once per user)
 ```sh
 module load legacy
