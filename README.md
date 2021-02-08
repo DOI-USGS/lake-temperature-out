@@ -50,10 +50,22 @@ library(scipiper)
 sbtools::authenticate_sb('cidamanager')
 scmake('3_summarize/out/annual_metrics_pgdl.csv')
 ```
-but code will need to be modified so that you use loop tasks and also so you can specify the number of cores loop tasks is using...
 
-If the job fails or you are kicked off Yeti, no worries, as remake/scipiper will pick back up where you left off in the task table. 🎉
+Note that `3_summarize.yml` will need to be modified to take advantage of loop tasks by specifying the number of cores to use. If the job fails or you are kicked off Yeti, no worries, as remake/scipiper will pick back up where you left off in the task table. 🎉
 
+Lastly, the `glm2 pb0` runs have tons of lakes and were successfully run by NOT using an interactive R session. So, instead of starting R as it says in the steps above, add an R script called `run.R` that contains that following script and kick off at the command line by running `nohup Rscript run.R &`. The difference is that you can't use this method to log in to SB, so make sure `1_fetch` steps are complete first.
+
+```r
+# To kick this off, run the following in the command line instead of `R`
+# `nohup Rscript run.R &`
+
+message("Build with no login to SB")
+library(scipiper)
+
+message(sprintf("starting 3_summarize for glm2pb0 at %s", Sys.time()))
+scmake("3_summarize/out/annual_metrics_glm2pb0.csv")
+
+```
 
 ## Editing files on the cluster - Launching Jupyter Lab
 
