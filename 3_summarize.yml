@@ -65,29 +65,22 @@ targets:
   temp_ranges:
     command: select(temp_range_info, I('Temp_Low'), I('Temp_High'))
   
-  ice_files:
-    command: get_filenames_from_ind("2_process/out/iceflags_unzipped.yml")
-  
-  pgdl_site_files:
-    command: get_filenames_from_ind("2_process/out/2_pgdl_grp_tasks_completed.yml")
   3_summarize/out/annual_metrics_pgdl.csv:
     command: do_annual_metrics_multi_lake(
       final_target = target_name,
-      site_files = pgdl_site_files,
-      ice_files = ice_files,
+      site_file_yml = "2_process/out/2_pgdl_grp_tasks_completed.yml",
+      ice_file_yml = "2_process/out/iceflags_unzipped.yml",
       n_cores = 40,
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
     depends:
       - temp_ranges
   
-  pb0_site_files:
-    command: get_filenames_from_ind("2_process/out/2_pb0_grp_tasks_completed.yml")
   3_summarize/out/annual_metrics_pb0.csv:
     command: do_annual_metrics_multi_lake(
       final_target = target_name,
-      site_files = pb0_site_files,
-      ice_files = ice_files,
+      site_file_yml = "2_process/out/2_pb0_grp_tasks_completed.yml",
+      ice_file_yml = "2_process/out/iceflags_unzipped.yml",
       n_cores = 40,
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
@@ -96,16 +89,11 @@ targets:
 
 ##-- Multi-state GLM2 Data Release --##
 
-  glm2_ice_files:
-    command: get_filenames_from_ind("2_process/out/glm2_iceflags_unzipped.yml")
-  
-  glm2_pb0_files:
-    command: get_filenames_from_ind("2_process/out/2_glm2_pb0_unzipped.yml")
   3_summarize/out/annual_metrics_glm2pb0.csv:
     command: do_annual_metrics_multi_lake(
       final_target = target_name,
-      site_files = glm2_pb0_files,
-      ice_files = glm2_ice_files,
+      site_file_yml = "2_process/out/2_glm2_pb0_unzipped.yml",
+      ice_file_yml = "2_process/out/glm2_iceflags_unzipped.yml",
       n_cores = 40,
       morphometry = glm2_pb0_morphometry,
       temp_ranges = temp_ranges,
@@ -115,14 +103,12 @@ targets:
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R',
       '3_summarize/src/do_annual_thermal_metric_tasks.R')
-      
-  glm2_pball_files:
-    command: get_filenames_from_ind("2_process/out/2_glm2_pball_unzipped.yml")
+  
   3_summarize/out/annual_metrics_glm2pball.csv:
     command: do_annual_metrics_multi_lake(
       final_target = target_name,
-      site_files = glm2_pball_files,
-      ice_files = glm2_ice_files,
+      site_file_yml = "2_process/out/2_glm2_pball_unzipped.yml",
+      ice_file_yml = "2_process/out/glm2_iceflags_unzipped.yml",
       n_cores = 40,
       site_file_regex = I("(pball)_(.*)_temperatures(.csv)"),
       ice_file_regex = I("pball_(.*)_ice_flag.csv"),
