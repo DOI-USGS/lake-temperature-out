@@ -12,6 +12,7 @@ Rlib_3_6/
 
 # scipiper-specific files and folders
 */tmp/*
+*/tmp_glm2/*
 !1_fetch/tmp/EMPTY
 !2_process/tmp/EMPTY
 !3_summarize/tmp/EMPTY

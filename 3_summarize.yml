@@ -16,11 +16,17 @@ sources:
 targets:
   3_summarize:
     depends:
+    # mntoha data release targets
       - 3_summarize/out/3_summarize_zip_pb0_toha.yml
       - 3_summarize/out/3_summarize_zip_pgdl_toha.yml
       - 3_summarize/out/total_benthic_areas.csv
       - 3_summarize/out/annual_metrics_pgdl.csv
       - 3_summarize/out/annual_metrics_pb0.csv
+    # multi-state glm2 data release targets
+      - 3_summarize/out/annual_metrics_glm2pb0.csv
+      - 3_summarize/out/annual_metrics_glm2pball.csv
+
+##-- MN TOHA Data Release --##
 
   ### Zip up lake toha files by lake group ###
   
@@ -54,33 +60,60 @@ targets:
   # Based these additional metrics on the ones included in a previous lake modeling
   # data release (see https://www.sciencebase.gov/catalog/item/57d9e887e4b090824ffb1098)
 
-  temp_ranges:
+  temp_range_info:
     command: read_tsv("3_summarize/in/temp_ranges_for_metrics.txt")
+  temp_ranges:
+    command: select(temp_range_info, I('Temp_Low'), I('Temp_High'))
   
-  ice_files:
-    command: get_filenames_from_ind("2_process/out/iceflags_unzipped.yml")
-  
-  pgdl_site_files:
-    command: get_filenames_from_ind("2_process/out/2_pgdl_grp_tasks_completed.yml")
   3_summarize/out/annual_metrics_pgdl.csv:
     command: do_annual_metrics_multi_lake(
       final_target = target_name,
-      site_files = pgdl_site_files,
-      ice_files = ice_files,
+      site_file_yml = "2_process/out/2_pgdl_grp_tasks_completed.yml",
+      ice_file_yml = "2_process/out/iceflags_unzipped.yml",
       n_cores = 40,
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
     depends:
       - temp_ranges
   
-  pb0_site_files:
-    command: get_filenames_from_ind("2_process/out/2_pb0_grp_tasks_completed.yml")
   3_summarize/out/annual_metrics_pb0.csv:
     command: do_annual_metrics_multi_lake(
       final_target = target_name,
-      site_files = pb0_site_files,
-      ice_files = ice_files,
+      site_file_yml = "2_process/out/2_pb0_grp_tasks_completed.yml",
+      ice_file_yml = "2_process/out/iceflags_unzipped.yml",
       n_cores = 40,
+      '2_process/src/calculate_toha.R',
+      '3_summarize/src/annual_thermal_metrics.R')
+    depends:
+      - temp_ranges
+
+##-- Multi-state GLM2 Data Release --##
+
+  3_summarize/out/annual_metrics_glm2pb0.csv:
+    command: do_annual_metrics_multi_lake(
+      final_target = target_name,
+      site_file_yml = "2_process/out/2_glm2_pb0_unzipped.yml",
+      ice_file_yml = "2_process/out/glm2_iceflags_unzipped.yml",
+      n_cores = 40,
+      morphometry = glm2_pb0_morphometry,
+      temp_ranges = temp_ranges,
+      site_file_regex = I("(pb0)_(.*)_temperatures(.csv)"),
+      ice_file_regex = I("pb0_(.*)_ice_flag.csv"),
+      tmpdir_suffix = I("_glm2"),
+      '2_process/src/calculate_toha.R',
+      '3_summarize/src/annual_thermal_metrics.R',
+      '3_summarize/src/do_annual_thermal_metric_tasks.R')
+  
+  3_summarize/out/annual_metrics_glm2pball.csv:
+    command: do_annual_metrics_multi_lake(
+      final_target = target_name,
+      site_file_yml = "2_process/out/2_glm2_pball_unzipped.yml",
+      ice_file_yml = "2_process/out/glm2_iceflags_unzipped.yml",
+      n_cores = 40,
+      site_file_regex = I("(pball)_(.*)_temperatures(.csv)"),
+      ice_file_regex = I("pball_(.*)_ice_flag.csv"),
+      morph_prefix = I("glm2_pball_"), 
+      tmpdir_suffix = I("_glm2"),
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R')
     depends:

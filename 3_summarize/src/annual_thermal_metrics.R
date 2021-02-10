@@ -1,10 +1,20 @@
 
-calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_file, temp_ranges, morphometry, verbose = FALSE) {
+calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_file, temp_ranges_file, morphometry_ind, verbose = FALSE) {
   
   start_tm <- Sys.time()
-    
-  data_ready <- read_feather(site_file) %>% 
-    select(site_id, date = DateTime, starts_with("temp_")) %>% 
+  
+  if(tools::file_ext(site_file) == "feather") {
+    wtr_data <- read_feather(site_file) %>% 
+      select(site_id, date = DateTime, starts_with("temp_"))
+  } else if(tools::file_ext(site_file) == "csv") {
+    wtr_data <- read_csv(site_file) %>% 
+      mutate(site_id = site_id) %>% 
+      select(site_id, date, starts_with("temp_"))
+  } else {
+    stop(sprintf("Error with %s: file type not supported", site_file))
+  }
+  
+  data_ready <- wtr_data %>% 
     pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
     mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
     mutate(year = as.numeric(format(date, "%Y"))) %>% 
@@ -13,10 +23,14 @@ calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_
   stopifnot(nrow(data_ready) > 0) # There should be data for each site file
   
   # Get hypso for this site
+  morphometry <- readRDS(as_data_file(morphometry_ind))
   hypso <- data.frame(H = morphometry$H, A = morphometry$A) %>% 
     mutate(depths = max(H) - H, areas = A) %>% 
     arrange(depths) %>% 
     select(depths, areas)
+  
+  # Read in temp ranges to use
+  temp_ranges <- readRDS(temp_ranges_file)
   
   data_stratification_ice <- data_ready %>% 
     group_by(date) %>% 
@@ -106,7 +120,9 @@ calculate_annual_metrics_per_lake <- function(out_file, site_id, site_file, ice_
                     round(as.numeric(Sys.time() - start_tm, units = "mins"), 2)))
   }
   
-  saveRDS(annual_metrics, out_file)
+  data_file <- as_data_file(out_ind)
+  saveRDS(annual_metrics, data_file)
+  sc_indicate(ind_file = out_ind, data_file = data_file)
 
 }
 
