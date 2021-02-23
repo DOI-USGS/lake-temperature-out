@@ -30,7 +30,7 @@ targets:
       - 1_fetch/out/pgdl_matched_to_observations.zip
   
   sb_dl_date:
-   command: c(I("2020-04-29"))
+   command: c(I("2021-02-19"))
   
   ##-- Download files for mntoha data release --##
   
