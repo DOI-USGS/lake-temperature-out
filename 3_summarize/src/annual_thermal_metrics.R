@@ -303,7 +303,7 @@ calc_days_height_vol_within_range <- function(date, depth, wtr, hypso, temp_low,
       unpack(cols = Z1_Z2) %>% 
       mutate(daily_height_in_range = Z2 - Z1,
              daily_volume_in_range = calc_volume(Z1, Z2, hypso),
-             day_has_wtr_in_range = !is.na(daily_height_in_range)) %>% 
+             day_has_wtr_in_range = !is.na(daily_height_in_range) & daily_height_in_range > 0) %>% 
       summarize(!!sprintf("height_%s_%s", temp_low[i], temp_high[i]) := sum(daily_height_in_range, na.rm = TRUE),
                 !!sprintf("vol_%s_%s", temp_low[i], temp_high[i]) := sum(daily_volume_in_range, na.rm = TRUE),
                 !!sprintf("days_%s_%s", temp_low[i], temp_high[i]) := sum(day_has_wtr_in_range))

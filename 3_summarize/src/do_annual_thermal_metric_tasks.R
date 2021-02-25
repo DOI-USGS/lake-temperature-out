@@ -25,7 +25,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   
   temp_ranges_file <- sprintf("temp_ranges.rds")
   saveRDS(temp_ranges, temp_ranges_file)
-  
+
   # Define task table rows
   tasks <- tibble(wtr_filename = site_files) %>% 
     extract(wtr_filename, c('prefix','site_id','suffix'), site_file_regex, remove = FALSE) %>% 
@@ -83,7 +83,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
     task_plan = task_plan,
     makefile = task_makefile,
     sources = c(...),
-    packages = c('tidyverse', 'purrr', 'readr', 'scipiper'),
+    packages = c('tidyverse', 'purrr', 'readr', 'scipiper', 'feather'),
     final_targets = final_target,
     finalize_funs = 'combine_thermal_metrics',
     as_promises = TRUE,
