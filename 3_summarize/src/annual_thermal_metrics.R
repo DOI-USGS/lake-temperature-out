@@ -105,6 +105,7 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
       spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
       post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
       date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
+      date_below_temps = calc_first_day_below_temp(date, wtr_surf_daily, temperatures = c(5), peak_temp_dt),
       metalimnion_derivatives = calc_metalimnion_derivatives(date, depth, wtr, in_stratified_period, stratification_duration, hypso),
       open_water_duration = as.numeric(ice_on_date - ice_off_date),
       
@@ -112,7 +113,8 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
     ) %>% 
     unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
                     mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
-                    date_over_temps, days_height_vol_in_range, metalimnion_derivatives)) %>%
+                    date_over_temps, date_below_temps, 
+                    days_height_vol_in_range, metalimnion_derivatives)) %>%
     ungroup()
   
   if(verbose) {
@@ -363,6 +365,29 @@ calc_first_day_above_temp <- function(date, wtr_surf, temperatures) {
   names(date_above_df) <- sprintf("date_over_%s", temperatures)
   
   return(date_above_df)
+}
+
+#' date where surface temperature drops below a certain temperature in deg C
+#' after the summer peak; returns the Julian day
+calc_first_day_below_temp <- function(date, wtr_surf, temperatures, peak_temp_dt) {
+  
+  # Need one date & wtr_surf per day
+  date_unique <- unique_day(date)
+  wtr_surf_unique <- unique_day_data(date, wtr_surf)
+  
+  # Only keep dates after peak summer date because we want to know the fall date specifically
+  post_summer_peak_i <- which(date_unique > peak_temp_dt)
+  dates_post_summer <- date_unique[post_summer_peak_i]
+  water_surf_post_summer <- wtr_surf_unique[post_summer_peak_i]
+  
+  date_below_df <- lapply(temperatures, function(temp) {
+    first_day_below_temp <- dates_post_summer[water_surf_post_summer < temp] %>% head(1) %>% format("%j") %>% as.numeric()
+    if(length(first_day_below_temp) == 0) first_day_below_temp <- NA # Return NA if that temp was never reached
+    return(first_day_below_temp)
+  }) %>% data.frame()
+  names(date_below_df) <- sprintf("date_below_%s", temperatures)
+  
+  return(date_below_df)
 }
 
 #' @description Calculates the top and bottom depths of the metalimnion in a stratified lake in order
