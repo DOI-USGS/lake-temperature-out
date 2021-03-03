@@ -382,7 +382,7 @@ calc_first_day_below_temp <- function(date, wtr_surf, temperatures, peak_temp_dt
   
   date_below_df <- lapply(temperatures, function(temp) {
     first_day_below_temp <- dates_post_summer[water_surf_post_summer < temp] %>% head(1) %>% format("%j") %>% as.numeric()
-    if(length(first_day_below_temp) == 0) first_day_below_temp <- NA # Return NA if that temp was never reached
+    if(length(first_day_below_temp) == 0) first_day_below_temp <- NA # Return NA if the surface temp never dropped below the temp during the year
     return(first_day_below_temp)
   }) %>% data.frame()
   names(date_below_df) <- sprintf("date_below_%s", temperatures)
