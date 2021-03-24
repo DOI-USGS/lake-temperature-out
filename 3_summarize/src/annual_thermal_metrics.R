@@ -64,8 +64,8 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
       peak_temp = max(wtr_surf_daily, na.rm = TRUE),
       peak_temp_dt = date[which.max(wtr_surf_daily)],
 
-      ice_on_date = get_ice_onoff(date, ice, peak_temp_dt, "on"),
-      ice_off_date = get_ice_onoff(date, ice, peak_temp_dt, "off"),
+      ice_on_date = get_ice_on(date, ice, peak_temp_dt),
+      ice_off_date = get_ice_off(date, ice, peak_temp_dt),
 
       winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
       coef_var_31_60 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(31,60)),
@@ -496,42 +496,44 @@ is_in_longest_consective_chunk <- function(bool_vec) {
   }
 }
 
-get_ice_onoff <- function(date, ice, peak_temp_dt, on_or_off) {
+get_ice_on <- function(date, ice, peak_temp_dt) {
   
   # TODO: does this need to involve past and future year info like the function
   #   from mda.lakes? https://github.com/USGS-R/mda.lakes/blob/afb436e047d2a9ca30dfdeae13745d2ee5109455/R/get_ice_onoff.R#L17
-  
-  stopifnot(on_or_off %in% c("on", "off"))
   
   # Need one date & ice value per day (not per depth & day)
   date_unique <- unique_day(date)
   ice_unique <- unique_day_data(date, ice)
   
+  # Second half of year, which would be when ice forms ("ice on")
+  date_second_half <- date_unique[date_unique > peak_temp_dt]
+  ice_second_half <- ice_unique[date_unique > peak_temp_dt]
+  
+  # If there is no ice present during that part of the year, there is no ice off date because it wasn't there
+  if(!any(ice_second_half)) return(as.Date(NA)) #TODO: or what should we return?
+  
+  # Find start of longest ice period during second half of the year
+  ice_on <- head(which(is_in_longest_consective_chunk(ice_second_half)), 1)
+  return(date_second_half[ice_on])
+  
+}
 
-  if(on_or_off == "on") {
-    # Second half of year, which would be when ice forms ("ice on")
-    date_second_half <- date_unique[date_unique > peak_temp_dt]
-    ice_second_half <- ice_unique[date_unique > peak_temp_dt]
-    
-    # If there is no ice present during that part of the year, there is no ice off date because it wasn't there
-    if(!any(ice_second_half)) return(as.Date(NA)) #TODO: or what should we return?
-    
-    # Find start of longest ice period during second half of the year
-    ice_on <- head(which(is_in_longest_consective_chunk(ice_second_half)), 1)
-    return(date_second_half[ice_on])
-    
-  } else if(on_or_off == "off") {
-    # First half of year, which would be when ice melts ("ice off")
-    date_first_half <- date_unique[date_unique <= peak_temp_dt]
-    ice_first_half <- ice_unique[date_unique <= peak_temp_dt]
-    
-    # If there is no ice present during that part of the year, there is no ice off date because it wasn't there
-    if(!any(ice_first_half)) return(as.Date(NA)) #TODO: or do we return the first day of the year?
-    
-    # Find end of longest ice period during first half of the year
-    ice_off <- tail(which(is_in_longest_consective_chunk(ice_first_half)), 1)
-    return(date_first_half[ice_off])
-  }
+get_ice_off <- function(date, ice, peak_temp_dt) {
+  
+  # Need one date & ice value per day (not per depth & day)
+  date_unique <- unique_day(date)
+  ice_unique <- unique_day_data(date, ice)
+
+  # First half of year, which would be when ice melts ("ice off")
+  date_first_half <- date_unique[date_unique <= peak_temp_dt]
+  ice_first_half <- ice_unique[date_unique <= peak_temp_dt]
+  
+  # If there is no ice present during that part of the year, there is no ice off date because it wasn't there
+  if(!any(ice_first_half)) return(as.Date(NA)) #TODO: or do we return the first day of the year?
+  
+  # Find end of longest ice period during first half of the year
+  ice_off <- tail(which(is_in_longest_consective_chunk(ice_first_half)), 1)
+  return(date_first_half[ice_off])
   
 }
 
