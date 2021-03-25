@@ -108,15 +108,18 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
       date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
       date_below_temps = calc_first_day_below_temp(date, wtr_surf_daily, temperatures = c(5), peak_temp_dt),
       metalimnion_derivatives = calc_metalimnion_derivatives(date, depth, wtr, in_stratified_period, stratification_duration, hypso),
-      open_water_duration = as.numeric(ice_on_date - ice_off_date),
-      
+      # `open_water_duration` added after ungrouping and unpacking `ice_onoff_date`
+
       .groups = "keep" # suppresses message about regrouping
     ) %>% 
     unpack(cols = c(ice_onoff_date, mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
                     mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
                     date_over_temps, date_below_temps, 
                     days_height_vol_in_range, metalimnion_derivatives)) %>%
-    ungroup()
+    ungroup() %>% 
+    # Open water duration will be NA if either ice_on_date or ice_off_date is NA
+    # Needs to be calculated after ungrouping so we can use `lead`
+    mutate(open_water_duration = as.numeric(lead(ice_on_date) - ice_off_date))
   
   if(verbose) {
     message(sprintf("Completed annual metrics for %s in %s min", site_id, 
