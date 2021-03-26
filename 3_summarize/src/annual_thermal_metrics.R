@@ -69,8 +69,8 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
       ice_onoff_date = get_ice_onoff(date, ice, peak_temp_dt, prev_yr_ice = get_last_years_data(unique(year), data_ready_with_flags)),
 
       winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
-      coef_var_31_60 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(31,60)),
-      coef_var_1_30 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(1,30)),
+      coef_var_31_60 = coef_var(date, wtr_surf_daily, ice_off_date = ice_onoff_date$ice_off_date, c(31,60)),
+      coef_var_1_30 = coef_var(date, wtr_surf_daily, ice_off_date = ice_onoff_date$ice_off_date, c(1,30)),
 
       # Metrics that deal with the stratified period
       stratification_onset_yday = stratification_onset_yday(date, in_stratified_period),
@@ -81,7 +81,7 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
       gdd_wtr_0c = calc_gdd(date, wtr_surf_daily, 0),
       gdd_wtr_5c = calc_gdd(date, wtr_surf_daily, 5),
       gdd_wtr_10c = calc_gdd(date, wtr_surf_daily, 10),
-      schmidt_daily_annual_sum = schmidt_daily_annual_sum(date, depth, wtr, ice_on_date, ice_off_date, hypso),
+      schmidt_daily_annual_sum = schmidt_daily_annual_sum(date, depth, wtr, ice, hypso),#_onoff_date$ice_on_date, ice_onoff_date$ice_off_date, hypso),
 
       # The following section of metrics return a data.frame per summarize command and
       #   are unpacked into their real columns after using `unpack`
@@ -104,7 +104,7 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
                                                                    temp_high = temp_ranges$Temp_High),
 
       spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
-      post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
+      post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_onoff_date$ice_off_date),
       date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
       date_below_temps = calc_first_day_below_temp(date, wtr_surf_daily, temperatures = c(5), peak_temp_dt),
       metalimnion_derivatives = calc_metalimnion_derivatives(date, depth, wtr, in_stratified_period, stratification_duration, hypso),
