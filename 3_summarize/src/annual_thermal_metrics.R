@@ -56,21 +56,42 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
     # to be joined to the per day per depth format of `data_ready`
     left_join(data_stratification_ice, by = "date") # these were calculated by day and by adding into a long format data set, they will be duplicated
   
-  annual_metrics <- data_ready_with_flags %>%
+  # Need these summaries to be used by functions in the next one. Biggest reason is that other functions
+  # need access to the following year's ice_on_date and can't use lead/lag unless outside of `summarize`
+  pre_summary_data <- data_ready_with_flags %>% 
     group_by(site_id, year) %>% 
     summarize(
-      
       # Maximum observed surface temperature & corresponding date
       peak_temp = max(wtr_surf_daily, na.rm = TRUE),
       peak_temp_dt = date[which.max(wtr_surf_daily)],
-
+      
       # Find ice on and ice off at the same time since both need to use the longest period of ice calc.
       # Also, pass in last years data so that ice on captures potential December (or earlier dates from that year's winter).
-      ice_onoff_date = get_ice_onoff(date, ice, peak_temp_dt, prev_yr_ice = get_last_years_data(unique(year), data_ready_with_flags)),
-
+      ice_onoff_date = get_ice_onoff(date, ice, peak_temp_dt, prev_yr_ice = get_last_years_data(unique(year), data_ready_with_flags))
+    ) %>% 
+    unpack(ice_onoff_date) %>% 
+    ungroup() %>% 
+    # Now use ice_on_date and ice_off_date to add a column for the next winter's ice_on_date to use for open water calcs
+    mutate(ice_on_date_next = lead(ice_on_date)) %>% 
+    # Open water duration will be NA if either ice_on_date or ice_off_date is NA
+    # Needs to be calculated after ungrouping so we can use `lead`
+    mutate(open_water_duration = as.numeric(ice_on_date_next - ice_off_date))
+  
+  annual_metrics <- data_ready_with_flags %>%
+    # Join in pre-summarized data by year
+    left_join(pre_summary_data, by = c("site_id", "year")) %>% 
+    group_by(site_id, year) %>% 
+    summarize(
+      
+      # Filter pre-summarized data to be just that one value per year since joining with
+      # the daily data would have created multiples
+      peak_temp = unique(peak_temp), peak_temp_dt = unique(peak_temp_dt), 
+      ice_on_date = unique(ice_on_date), ice_off_date = unique(ice_off_date),
+      ice_on_date_next = unique(ice_on_date_next), open_water_duration = unique(open_water_duration),
+      
       winter_dur_0_4 = winter_dur_0_4(date, wtr, depth, prev_yr_data=get_last_years_data(unique(year), data_ready)),
-      coef_var_31_60 = coef_var(date, wtr_surf_daily, ice_off_date = ice_onoff_date$ice_off_date, c(31,60)),
-      coef_var_1_30 = coef_var(date, wtr_surf_daily, ice_off_date = ice_onoff_date$ice_off_date, c(1,30)),
+      coef_var_31_60 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(31,60)),
+      coef_var_1_30 = coef_var(date, wtr_surf_daily, ice_off_date = ice_off_date, c(1,30)),
 
       # Metrics that deal with the stratified period
       stratification_onset_yday = stratification_onset_yday(date, in_stratified_period),
@@ -81,7 +102,7 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
       gdd_wtr_0c = calc_gdd(date, wtr_surf_daily, 0),
       gdd_wtr_5c = calc_gdd(date, wtr_surf_daily, 5),
       gdd_wtr_10c = calc_gdd(date, wtr_surf_daily, 10),
-      schmidt_daily_annual_sum = schmidt_daily_annual_sum(date, depth, wtr, ice, hypso),#_onoff_date$ice_on_date, ice_onoff_date$ice_off_date, hypso),
+      schmidt_daily_annual_sum = schmidt_daily_annual_sum(date, depth, wtr, ice_on_date_next, ice_off_date, hypso),
 
       # The following section of metrics return a data.frame per summarize command and
       #   are unpacked into their real columns after using `unpack`
@@ -104,22 +125,22 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
                                                                    temp_high = temp_ranges$Temp_High),
 
       spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
-      post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_onoff_date$ice_off_date),
+      post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
       date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
       date_below_temps = calc_first_day_below_temp(date, wtr_surf_daily, temperatures = c(5), peak_temp_dt),
       metalimnion_derivatives = calc_metalimnion_derivatives(date, depth, wtr, in_stratified_period, stratification_duration, hypso),
-      # `open_water_duration` added after ungrouping and unpacking `ice_onoff_date`
 
       .groups = "keep" # suppresses message about regrouping
     ) %>% 
-    unpack(cols = c(ice_onoff_date, mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
+    unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
                     mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
-                    date_over_temps, date_below_temps, 
+                    date_over_temps, date_below_temps,
                     days_height_vol_in_range, metalimnion_derivatives)) %>%
     ungroup() %>% 
-    # Open water duration will be NA if either ice_on_date or ice_off_date is NA
-    # Needs to be calculated after ungrouping so we can use `lead`
-    mutate(open_water_duration = as.numeric(lead(ice_on_date) - ice_off_date))
+    # Remove next year's ice_on_date since it can be found by using `lead()`
+    select(-ice_on_date_next) %>% 
+    # Move open_water_duration to end to match previous output
+    relocate(open_water_duration, .after = last_col())
   
   if(verbose) {
     message(sprintf("Completed annual metrics for %s in %s min", site_id, 
@@ -244,6 +265,8 @@ bottom_temp_at_strat <- function(date, wtr_bot, year, stratification_onset_yday,
 }
 
 #' @description Sum of daily Schmidt Stability values for calendar year.
+#' ice_on_date here refers to the upcoming winter ice_on (which could be
+#' in Jan of the next year).
 schmidt_daily_annual_sum <- function(date, depth, wtr, ice_on_date, ice_off_date, hypso) {
   tibble(date, depth, wtr) %>% 
     # Only use days with open water (no ice) and handle situations
