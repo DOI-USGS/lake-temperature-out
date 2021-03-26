@@ -67,7 +67,9 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
       
       # Find ice on and ice off at the same time since both need to use the longest period of ice calc.
       # Also, pass in last years data so that ice on captures potential December (or earlier dates from that year's winter).
-      ice_onoff_date = get_ice_onoff(date, ice, peak_temp_dt, prev_yr_ice = get_last_years_data(unique(year), data_ready_with_flags))
+      ice_onoff_date = get_ice_onoff(date, ice, peak_temp_dt, prev_yr_ice = get_last_years_data(unique(year), data_ready_with_flags)),
+      
+      .groups = "keep" # suppresses message about regrouping
     ) %>% 
     unpack(ice_onoff_date) %>% 
     ungroup() %>% 
