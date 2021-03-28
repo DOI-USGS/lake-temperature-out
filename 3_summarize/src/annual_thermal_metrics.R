@@ -565,6 +565,12 @@ get_ice_onoff <- function(date, ice, peak_temp_dt, prev_yr_ice) {
     dates_in_ice_period <- date_unique[which(is_in_longest_consective_chunk(ice_unique))]
     ice_on <- head(dates_in_ice_period, 1)
     ice_off <- tail(dates_in_ice_period, 1)
+    
+    # ice_off should not be in the year before, so should be NA 
+    # if there are no ice off dates in the current year.
+    if(as.numeric(format(ice_off, "%Y")) != unique(as.numeric(format(date, "%Y")))) {
+      ice_off <- as.Date(NA)
+    }
   }
   
   return(data.frame(ice_on_date = ice_on, ice_off_date = ice_off))
