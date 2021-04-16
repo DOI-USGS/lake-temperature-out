@@ -574,6 +574,12 @@ get_ice_onoff <- function(date, ice, peak_temp_dt, prev_yr_ice) {
     }
   }
   
+  if(nrow(prev_yr_ice) == 0) {
+    # Return NA for ice_on if there was not any data from the previous year
+    # This is usually an issue for the first year in a dataset 
+    ice_on <- as.Date(NA)
+  }
+  
   return(data.frame(ice_on_date = ice_on, ice_off_date = ice_off))
   
 }
