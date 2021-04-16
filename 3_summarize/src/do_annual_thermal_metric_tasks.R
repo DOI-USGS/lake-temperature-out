@@ -92,7 +92,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   # Build the tasks
   loop_tasks(task_plan = task_plan,
              task_makefile = task_makefile,
-             num_tries = 1,
+             num_tries = 3,
              n_cores = n_cores)
   
   # Clean up files created
