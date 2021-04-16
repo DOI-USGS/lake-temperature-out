@@ -185,24 +185,25 @@ filter_out_partial_yrs <- function(df) {
 winter_dur_0_4 <- function(this_yr_date, this_yr_wtr, this_yr_depth, prev_yr_data) {
   
   if(nrow(prev_yr_data) == 0) {
-    # TODO: should this allow partial data? For example, if the dates started in 
-    #   May, it may return 0 for that year. May need to skip and return NA.
-    start_date <- min(this_yr_date)
+    # Return NA if there is not enough data from the previous year
+    # This is usually an issue for the first year in a dataset 
+    return(NA)
   } else {
+    
     start_date <- unique(sprintf("%s-10-30", format(prev_yr_data$date, "%Y")))
+    
+    end_date <- unique(sprintf("%s-06-30", format(this_yr_date, "%Y")))
+    
+    data.frame(date = c(prev_yr_data$date, this_yr_date), 
+               wtr = c(prev_yr_data$wtr, this_yr_wtr),
+               depth = c(prev_yr_data$depth, this_yr_depth)) %>% 
+      filter(
+        date >= start_date & date <= end_date, # Oct 30 prev year to June 30 this year
+        depth == 0, # surface water
+        wtr < 4 # TODO: What about negatives? Should it be 0-4 or just less than 4?
+      ) %>% 
+      nrow()
   }
-  end_date <- unique(sprintf("%s-06-30", format(this_yr_date, "%Y")))
-  
-  data.frame(date = c(prev_yr_data$date, this_yr_date), 
-             wtr = c(prev_yr_data$wtr, this_yr_wtr),
-             depth = c(prev_yr_data$depth, this_yr_depth)) %>% 
-    filter(
-      date >= start_date & date <= end_date, # Oct 30 prev year to June 30 this year
-      depth == 0, # surface water
-      wtr < 4 # TODO: What about negatives? Should it be 0-4 or just less than 4?
-    ) %>% 
-    nrow()
-   
 }
 
 #' @description Coefficient of Variation of surface temperature from a range of days 
