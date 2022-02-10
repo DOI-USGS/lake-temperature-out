@@ -15,13 +15,27 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
       } %>% 
       # Different outputs for modeled lake temp have different colnames for the date
       rename(date = matches("DateTime|time")) %>% 
-      select(site_id, date, starts_with("temp_"))
+      # If there is no `ice` column in the data, then only site, date, and temp columns
+      # will be returned. The `ice` column will come from the `ice_file`, joined later.
+      select(site_id, date, starts_with("temp_"), matches("ice"))
   } else if(tools::file_ext(site_file) == "csv") {
     wtr_data <- read_csv(site_file) %>% 
       mutate(site_id = site_id) %>% 
-      select(site_id, date, starts_with("temp_"))
+      # If there is no `ice` column in the data, then no column will be returned and
+      # we should be getting the `ice` column from the `ice_file` joined later
+      select(site_id, date, starts_with("temp_"), matches("ice"))
   } else {
     stop(sprintf("Error with %s: file type not supported", site_file))
+  }
+  
+  if(!is.null(ice_file)) {
+    ice_data <- read_csv(ice_file, col_types = cols())
+  } else {
+    # If there is no `ice_file` provided, we assume that the `ice` column already exists
+    # in the data (as it should with the output from GLM projection output from Feb 2022)
+    # Extract that info and make a separate ice df; also, remove the column from the incoming data
+    ice_data <- wtr_data %>% select(date, ice)
+    wtr_data <- wtr_data %>% select(-ice)
   }
   
   data_ready <- wtr_data %>% 
@@ -49,7 +63,7 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
               .groups = "keep") %>% 
     ungroup() %>% 
     # Read and join ice flags for this site (can join here because there is only one per day)
-    left_join(read_csv(ice_file, col_types = cols()), by = "date") %>% 
+    left_join(ice_data, by = "date") %>% 
     mutate(stratified = is_stratified(wtr_surf_daily, wtr_bot_daily, ice, force_warm = TRUE)) %>% 
     # Add year back in because it is dropped in `group_by` above
     mutate(year = as.numeric(format(date, "%Y"))) %>% 
