@@ -14,16 +14,10 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
         else .
       } %>% 
       # Different outputs for modeled lake temp have different colnames for the date
-      rename(date = matches("DateTime|time")) %>% 
-      # If there is no `ice` column in the data, then only site, date, and temp columns
-      # will be returned. The `ice` column will come from the `ice_file`, joined later.
-      select(site_id, date, starts_with("temp_"), matches("ice"))
+      rename(date = matches("DateTime|time"))
   } else if(tools::file_ext(site_file) == "csv") {
     wtr_data <- read_csv(site_file) %>% 
-      mutate(site_id = site_id) %>% 
-      # If there is no `ice` column in the data, then no column will be returned and
-      # we should be getting the `ice` column from the `ice_file` joined later
-      select(site_id, date, starts_with("temp_"), matches("ice"))
+      mutate(site_id = site_id) 
   } else {
     stop(sprintf("Error with %s: file type not supported", site_file))
   }
@@ -33,12 +27,13 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
   } else {
     # If there is no `ice_file` provided, we assume that the `ice` column already exists
     # in the data (as it should with the output from GLM projection output from Feb 2022)
-    # Extract that info and make a separate ice df; also, remove the column from the incoming data
+    # Extract that info and make a separate ice df
     ice_data <- wtr_data %>% select(date, ice)
-    wtr_data <- wtr_data %>% select(-ice)
   }
   
   data_ready <- wtr_data %>% 
+    # If there is an `ice` column in wtr_data, then it will be removed
+    select(site_id, date, starts_with("temp_"), -matches("ice")) %>% 
     pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
     mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
     mutate(year = as.numeric(format(date, "%Y"))) %>% 
