@@ -8,6 +8,12 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
     # But feathers created with `feather` don't fail when reading in with `arrow:read_feather()`
     wtr_data <- arrow::read_feather(site_file) %>% 
       select(site_id, date = DateTime, starts_with("temp_"))
+      {
+        # Add the `site_id` column if it isn't present using the 
+        if(!"site_id" %in% names(.))
+          mutate(., site_id = site_id)
+        else .
+      } %>% 
   } else if(tools::file_ext(site_file) == "csv") {
     wtr_data <- read_csv(site_file) %>% 
       mutate(site_id = site_id) %>% 
