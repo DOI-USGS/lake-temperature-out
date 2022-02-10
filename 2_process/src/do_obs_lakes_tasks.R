@@ -85,7 +85,7 @@ do_obs_lake_tasks <- function(target_name, task_df_fn, irr_df_fn, k0_df_fn, obs_
     makefile = task_makefile,
     include = 'remake.yml',
     sources = c(...),
-    packages = c("purrr", "dplyr", "mda.lakes", "feather", "rLakeAnalyzer", "readr"),
+    packages = c("purrr", "dplyr", "mda.lakes", "arrow", "rLakeAnalyzer", "readr"),
     final_targets = c(target_name),
     finalize_funs = c('combine_obs_toha'),
     as_promises = TRUE,

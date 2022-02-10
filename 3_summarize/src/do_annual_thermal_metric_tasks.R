@@ -83,7 +83,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
     task_plan = task_plan,
     makefile = task_makefile,
     sources = c(...),
-    packages = c('tidyverse', 'purrr', 'readr', 'scipiper', 'feather'),
+    packages = c('tidyverse', 'purrr', 'readr', 'scipiper', 'arrow'),
     final_targets = final_target,
     finalize_funs = 'combine_thermal_metrics',
     as_promises = TRUE,

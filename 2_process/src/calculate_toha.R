@@ -3,7 +3,7 @@
 
 calculate_toha_per_lake <- function(target_name, site_data_fn, morphometry) {
   
-  site_data <- feather::read_feather(site_data_fn)
+  site_data <- arrow::read_feather(site_data_fn)
   wtr_cols <- grep("temp_", names(site_data))
   
   # When adding obs data, some sites don't make it past the filtering criteria

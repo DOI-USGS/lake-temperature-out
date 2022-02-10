@@ -1,11 +1,11 @@
 target_default: 2_process
 
 packages:
+  - arrow
   - dplyr
   - tidyr
   - scipiper
   - readr
-  - feather
   - purrr
 
 sources:

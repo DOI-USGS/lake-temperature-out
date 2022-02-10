@@ -76,7 +76,7 @@ do_lakegroup_tasks <- function(final_target, task_ids, irradiance_zips, clarity_
     makefile=task_makefile,
     include='remake.yml',
     sources=c(...),
-    packages=c("purrr", "dplyr", "readr", "feather"),
+    packages=c("purrr", "dplyr", "readr", "arrow"),
     final_targets = final_target,
     finalize_funs = "indicate_file_dataframes",
     as_promises = TRUE,
