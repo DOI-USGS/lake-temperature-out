@@ -620,15 +620,14 @@ find_Z1_Z2 <- function(wtr, depth, wtr_upper_bound, wtr_lower_bound) {
       # which causes approx to throw an error. Return NAs for the Zs and let
       # checks below determine if benth area is all (or partially) above or 
       # below the lake and set Zs based on that.
-      Z1_Z2 <- c(NA,NA)
+      Z1 <- rep(NA, length(wtr_upper_bound))
+      Z2 <- rep(NA, length(wtr_lower_bound))
     } else {
       # Had to explicitly add `ties=mean` to suppress warning
       # https://community.rstudio.com/t/conditionally-interpolate-values-for-one-data-frame-based-on-another-lookup-table-per-group-solved/40922/5
-      Z1_Z2 <- approx(wtr, depth, xout=c(wtr_upper_bound, wtr_lower_bound), ties=mean)$y
+      Z1 <- approx(wtr, depth, xout=wtr_upper_bound, ties=mean)$y
+      Z2 <- approx(wtr, depth, xout=wtr_lower_bound, ties=mean)$y
     }
-    
-    Z1 <- Z1_Z2[1]
-    Z2 <- Z1_Z2[2]
     
     wtr_surface <- wtr[which.min(depth)] # wtr_surface will be whatever the top-most wtr is
     wtr_bottom <- wtr[which.max(depth)] # wtr_bottom will be whatever the bottom-most wtr is
@@ -653,8 +652,8 @@ find_Z1_Z2 <- function(wtr, depth, wtr_upper_bound, wtr_lower_bound) {
     Z2[extends_below_lake] <- z_max
   } else {
     # If there is only one non-NA wtr, then we can't figure out where Z1 and Z2 would be
-    Z1 <- NA
-    Z2 <- NA
+    Z1 <- rep(NA, length(wtr_upper_bound))
+    Z2 <- rep(NA, length(wtr_lower_bound))
   }
   return(tibble(Z1 = Z1, Z2 = Z2))
 }
