@@ -159,7 +159,7 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
                     days_height_vol_in_range, metalimnion_derivatives)) %>%
     ungroup() %>% 
     # Remove next year's ice_on_date since it can be found by using `lead()`
-    select(-ice_on_date_next) %>% 
+    select(-ice_on_date_next) %>%
     # Move open_water_duration to end to match previous output
     relocate(open_water_duration, .after = last_col())
   
@@ -341,34 +341,30 @@ calc_monthly_summary_stat <- function(date, wtr_at_depth, depth_prefix, stat_typ
 }
 
 #' days in which there is any part of water column in a temperature range
-calc_days_height_vol_within_range <- function(date, depth, wtr, hypso, temp_low, temp_high) {
+calc_days_height_vol_within_range <- function(daily_data, hypso, temp_low, temp_high) {
   stopifnot(length(temp_low) == length(temp_high))
   
-  # Setup order of column names
-  temp_colnames <- apply(expand.grid(c("height", "vol", "days"), sprintf("%s_%s", temp_low, temp_high)), 1, paste, collapse="_")
+  # Create a vector of names in the order we want them (height_[temp range 1], vol_[temp range 1], days_[temp range 1], etc)
+  temp_range_str <- sprintf("%s_%s", temp_low, temp_high)
+  out_colnames <- apply(expand.grid(c("height", "vol", "days"), temp_range_str), 1, paste, collapse = "_")
   
-  tibble(date, depth, wtr) %>% 
-    group_by(date) %>% 
-    # Calculate the Z1 and Z2 for each temperature range per day
-    summarize(Z1_Z2 = mutate(find_Z1_Z2(wtr, depth, temp_high, temp_low), temp_low, temp_high), .groups = "keep") %>% 
-    unpack(cols = Z1_Z2) %>% 
-    ungroup() %>% 
-    # Calculate the meaning metrics from Z1 and Z2
-    mutate(daily_height_in_range = Z2 - Z1,
-           daily_volume_in_range = calc_volume(Z1, Z2, hypso),
-           day_has_wtr_in_range = !is.na(daily_height_in_range) & daily_height_in_range > 0,
-           temp_range = sprintf("%s_%s", temp_low, temp_high)) %>% 
-    # Summarize the single annual value per temperature range
-    group_by(temp_range) %>% 
-    summarize(height = sum(daily_height_in_range, na.rm = TRUE),
-              vol = sum(daily_volume_in_range, na.rm = TRUE),
-              days = sum(day_has_wtr_in_range)) %>% 
-    # Switch the data frame so that there is a column per metric per temperature range
-    pivot_wider(names_from = temp_range, values_from = c("height","vol", "days")) %>% 
-    # Reorder the columns to match order of input ranges
-    relocate(temp_colnames) %>% 
-    ungroup()
-
+  setDT(daily_data)
+  
+  dt <- daily_data[, find_Z1_Z2(wtr, depth, temp_high, temp_low), by = list(year,date)][, `:=` (
+    height = as.numeric(Z2 - Z1),
+    vol = as.numeric(calc_volume(Z1, Z2, hypso))
+  )][, days := as.numeric(height > 0)
+     ][, c("Z1", "Z2") := NULL
+       ][, lapply(.SD, sum, na.rm = TRUE), .SDcols = c("height", "vol", "days"), by = list(year, temp_low, temp_high)]
+  
+  dt_wide <- dcast(dt, year ~ temp_low + temp_high, value.var = c("height", "vol", "days"))
+  setcolorder(dt_wide, c("year", out_colnames))
+  
+  setDF(dt_wide)
+  out <- as_tibble(dt_wide)
+  
+  return(out)
+  
 }
 
 #' duration of surface temperature between two temperatures degrees C (Spring only)
@@ -663,7 +659,10 @@ find_Z1_Z2 <- function(wtr, depth, wtr_upper_bound, wtr_lower_bound) {
     Z1 <- rep(NA, length(wtr_upper_bound))
     Z2 <- rep(NA, length(wtr_lower_bound))
   }
-  return(tibble(Z1 = Z1, Z2 = Z2))
+  return(data.table(temp_low = wtr_lower_bound, 
+                    temp_high = wtr_upper_bound, 
+                    Z1 = as.numeric(Z1), 
+                    Z2 = as.numeric(Z2)))
 }
 
 unique_day_data <- function(date, vec) {
