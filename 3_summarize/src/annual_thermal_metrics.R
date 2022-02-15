@@ -344,22 +344,30 @@ calc_monthly_summary_stat <- function(date, wtr_at_depth, depth_prefix, stat_typ
 calc_days_height_vol_within_range <- function(date, depth, wtr, hypso, temp_low, temp_high) {
   stopifnot(length(temp_low) == length(temp_high))
   
-  grpd_data <- tibble(date, depth, wtr) %>% 
-    group_by(date)
+  # Setup order of column names
+  temp_colnames <- apply(expand.grid(c("height", "vol", "days"), sprintf("%s_%s", temp_low, temp_high)), 1, paste, collapse="_")
   
-  purrr::map(seq_along(temp_low), function(i, grpd_data, temp_low, temp_high, hypso) {
-    grpd_data %>% 
-      summarize(Z1_Z2 = find_Z1_Z2(wtr, depth, temp_high[i], temp_low[i]), .groups = "keep") %>% 
-      ungroup() %>% 
-      unpack(cols = Z1_Z2) %>% 
-      mutate(daily_height_in_range = Z2 - Z1,
-             daily_volume_in_range = calc_volume(Z1, Z2, hypso),
-             day_has_wtr_in_range = !is.na(daily_height_in_range) & daily_height_in_range > 0) %>% 
-      summarize(!!sprintf("height_%s_%s", temp_low[i], temp_high[i]) := sum(daily_height_in_range, na.rm = TRUE),
-                !!sprintf("vol_%s_%s", temp_low[i], temp_high[i]) := sum(daily_volume_in_range, na.rm = TRUE),
-                !!sprintf("days_%s_%s", temp_low[i], temp_high[i]) := sum(day_has_wtr_in_range))
-  }, grpd_data, temp_low, temp_high, hypso) %>% 
-    bind_cols()
+  tibble(date, depth, wtr) %>% 
+    group_by(date) %>% 
+    # Calculate the Z1 and Z2 for each temperature range per day
+    summarize(Z1_Z2 = mutate(find_Z1_Z2(wtr, depth, temp_high, temp_low), temp_low, temp_high), .groups = "keep") %>% 
+    unpack(cols = Z1_Z2) %>% 
+    ungroup() %>% 
+    # Calculate the meaning metrics from Z1 and Z2
+    mutate(daily_height_in_range = Z2 - Z1,
+           daily_volume_in_range = calc_volume(Z1, Z2, hypso),
+           day_has_wtr_in_range = !is.na(daily_height_in_range) & daily_height_in_range > 0,
+           temp_range = sprintf("%s_%s", temp_low, temp_high)) %>% 
+    # Summarize the single annual value per temperature range
+    group_by(temp_range) %>% 
+    summarize(height = sum(daily_height_in_range, na.rm = TRUE),
+              vol = sum(daily_volume_in_range, na.rm = TRUE),
+              days = sum(day_has_wtr_in_range)) %>% 
+    # Switch the data frame so that there is a column per metric per temperature range
+    pivot_wider(names_from = temp_range, values_from = c("height","vol", "days")) %>% 
+    # Reorder the columns to match order of input ranges
+    relocate(temp_colnames) %>% 
+    ungroup()
 
 }
 
