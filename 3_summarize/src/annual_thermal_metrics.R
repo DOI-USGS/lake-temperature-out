@@ -78,6 +78,8 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
   # Need these summaries to be used by functions in the next one. Biggest reason is that other functions
   # need access to the following year's ice_on_date and can't use lead/lag unless outside of `summarize`
   pre_summary_data <- data_ready_with_flags %>% 
+    # `site_id` included here just so it exists in the final output; there should only be one site_id
+    # in the file passed to this function
     group_by(site_id, year) %>% 
     summarize(
       # Maximum observed surface temperature & corresponding date
