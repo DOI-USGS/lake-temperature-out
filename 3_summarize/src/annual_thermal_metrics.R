@@ -98,6 +98,16 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
     # Needs to be calculated after ungrouping so we can use `lead`
     mutate(open_water_duration = as.numeric(ice_on_date_next - ice_off_date))
   
+  # Separately summarize height, volume, days for desired temperature ranges in order
+  # to speed things up using `data.table` methods (this is the slowest part of the function)
+  # Hansen metrics
+  # See https://github.com/USGS-R/necsc-lake-modeling/blob/d37377ea422b9be324e8bd203fc6eecc36966401/data/habitat_metrics_table_GH.csv
+  annual_height_vol_days <- data_ready %>%  
+    calc_days_height_vol_within_range(
+      hypso, 
+      temp_low = temp_ranges$Temp_Low, 
+      temp_high = temp_ranges$Temp_High)
+  
   annual_metrics <- data_ready_with_flags %>%
     # Join in pre-summarized data by year
     left_join(pre_summary_data, by = c("site_id", "year")) %>% 
@@ -138,13 +148,6 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
       mean_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "mean"),
       max_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "max"),
 
-      # Hansen metrics
-      # See https://github.com/USGS-R/necsc-lake-modeling/blob/d37377ea422b9be324e8bd203fc6eecc36966401/data/habitat_metrics_table_GH.csv
-
-      days_height_vol_in_range = calc_days_height_vol_within_range(date, depth, wtr, hypso,
-                                                                   temp_low = temp_ranges$Temp_Low,
-                                                                   temp_high = temp_ranges$Temp_High),
-
       spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
       post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
       date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
@@ -156,12 +159,14 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
     unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
                     mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
                     date_over_temps, date_below_temps,
-                    days_height_vol_in_range, metalimnion_derivatives)) %>%
+                    metalimnion_derivatives)) %>%
+    
     ungroup() %>% 
     # Remove next year's ice_on_date since it can be found by using `lead()`
     select(-ice_on_date_next) %>%
     # Move open_water_duration to end to match previous output
-    relocate(open_water_duration, .after = last_col())
+    relocate(open_water_duration, .after = last_col()) %>% 
+    left_join(annual_height_vol_days, by = "year")
   
   if(verbose) {
     message(sprintf("Completed annual metrics for %s in %s min", site_id, 
