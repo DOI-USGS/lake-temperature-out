@@ -2,6 +2,7 @@ target_default: 3_summarize
 
 packages:
   - arrow
+  - data.table
   - dplyr
   - readr
   - tidyr
