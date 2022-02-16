@@ -172,7 +172,7 @@ targets:
   ##-- Access files for GLM3 + GCM projections data release --##
   
   caldera_cp_date:
-    command: I('2022-02-16')
+    command: c(I('2022-02-16'))
   
   # TODO: should I download from SB `6206d3c2d34ec05caca53071` or keep accessing using Caldera?
   # TODO: change to 3_extract/out instead after the next full re-run
