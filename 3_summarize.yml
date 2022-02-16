@@ -12,6 +12,7 @@ sources:
   - 2_process/src/calculate_toha.R # Has the benthic area fxn & resample_hypso
   - 3_summarize/src/annual_thermal_metrics.R
   - 3_summarize/src/do_annual_thermal_metric_tasks.R
+  - 3_summarize/src/plot_annual_metric_summaries.R
 
 targets:
   3_summarize:
@@ -140,3 +141,14 @@ targets:
       suffix_as_model_id = I(TRUE),
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R',
+      '3_summarize/src/do_annual_thermal_metric_tasks.R')
+  
+  # Verify outputs through some plots:
+  3_summarize/out_plots/annual_metrics_plots_gcms.yml:
+    command: plot_annual_metric_summaries(
+      target_name,
+      in_file = "3_summarize/out/annual_metrics_glm3pb0_gcms.csv",
+      target_dir = I("3_summarize/out_plots"),
+      model_id_colname = I("GCM"))
+  
+ 
