@@ -181,7 +181,7 @@ targets:
   # TODO: change to 3_extract/out instead after the next full re-run
   pb0_temp_projections_feathers:
     command: list.files(
-      path = I('../lake-temperature-process-models/3_extract/out'), 
+      path = I('../lake-temperature-process-models/2_run/out'), 
       pattern = I('GLM_nhdhr_(.*)(GFDL|IPSL|MIROC5|MRI|ACCESS|CNRM).feather'), 
       full.names = I(TRUE))
     depends: 
