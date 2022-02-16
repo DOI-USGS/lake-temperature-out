@@ -25,6 +25,8 @@ targets:
     # multi-state glm2 data release targets
       - 3_summarize/out/annual_metrics_glm2pb0.csv
       - 3_summarize/out/annual_metrics_glm2pball.csv
+    # climate projections glm3 data release target
+      - 3_summarize/out/annual_metrics_glm3pb0_gcms.csv
 
 ##-- MN TOHA Data Release --##
 
@@ -120,3 +122,21 @@ targets:
       '3_summarize/src/annual_thermal_metrics.R')
     depends:
       - temp_ranges
+
+##-- GLM3 + GCM Projections Data Release --##
+
+  # Do all GCMs at once and combine into a single file
+  3_summarize/out/annual_metrics_glm3pb0_gcms.csv:
+    command: do_annual_metrics_multi_lake(
+      final_target = target_name,
+      site_file_yml = "1_fetch/out/pb0_temp_projections.yml",
+      ice_file_yml = I(NULL),
+      n_cores = 1,
+      morphometry = glm3_pb0gcm_proj_morphometry,
+      temp_ranges = temp_ranges,
+      site_file_regex = I("(GLM)_(.*)_(.*).feather"),
+      tmpdir_suffix = I("_proj"),
+      model_id_colname = I("GCM"), 
+      suffix_as_model_id = I(TRUE),
+      '2_process/src/calculate_toha.R',
+      '3_summarize/src/annual_thermal_metrics.R',
