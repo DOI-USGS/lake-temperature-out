@@ -7,6 +7,7 @@ packages:
 
 sources:
   - 1_fetch/src/fetch_sb_item_files.R
+  - 1_fetch/src/copy_caldera_files.R
 
 targets:
   1_fetch:
@@ -167,3 +168,17 @@ targets:
       sb_id = I("5e774324e4b01d509270e29f"), 
       sb_filename = I("pgdl_matched_to_observations.zip"),
       dummy = sb_dl_date)
+  
+  ##-- Access files for GLM3 + GCM projections data release --##
+  
+  # TODO: should I download from SB `6206d3c2d34ec05caca53071` or keep accessing using Caldera?
+  # TODO: change to 3_extract/out instead after the next full re-run
+  pb0_temp_projections_feathers:
+    command: list.files(I('../lake-temperature-process-models/3_extract/out'), full.names = I(TRUE))
+  1_fetch/out/pb0_temp_projections.yml:
+    command: copy_caldera_files(target_name, files_in = pb0_temp_projections_feathers, out_dir = I('1_fetch/tmp_proj'))
+  
+  # TODO: should I download from SB `6206d3c2d34ec05caca53071` or keep accessing using Caldera?
+  1_fetch/out/pb0_temp_projections_nml.rds.ind:
+    command: copy_caldera_files(target_name, files_in = I('../lake-temperature-process-models/1_prep/in/nml_list.rds'))
+    
