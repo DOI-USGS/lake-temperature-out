@@ -29,6 +29,9 @@ targets:
       - 1_fetch/out/temperature_observations.zip
       - 1_fetch/out/pb0_matched_to_observations.zip
       - 1_fetch/out/pgdl_matched_to_observations.zip
+    # climate projections glm3 data release target
+      - 1_fetch/out/pb0_temp_projections.yml
+      - 1_fetch/out/pb0_temp_projections_nml.rds.ind
   
   sb_dl_date:
    command: c(I("2021-04-08"))
