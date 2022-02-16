@@ -133,7 +133,7 @@ targets:
       final_target = target_name,
       site_file_yml = "1_fetch/out/pb0_temp_projections.yml",
       ice_file_yml = I(NULL),
-      n_cores = 1,
+      n_cores = 79, # Hayley had trouble with specifying 80 but not 79 on denali
       morphometry = glm3_pb0gcm_proj_morphometry,
       temp_ranges = temp_ranges,
       site_file_regex = I("(GLM)_(.*)_(.*).feather"),
