@@ -68,7 +68,7 @@ do_lake_toha_tasks <- function(final_target, task_df_fn, n_cores, ...) {
     makefile=task_makefile,
     include='remake.yml',
     sources=c(...),
-    packages=c("purrr", "dplyr", "mda.lakes", "feather", "rLakeAnalyzer"),
+    packages=c("purrr", "dplyr", "mda.lakes", "arrow", "rLakeAnalyzer"),
     final_targets = final_target,
     as_promises = TRUE,
     tickquote_combinee_objects = TRUE

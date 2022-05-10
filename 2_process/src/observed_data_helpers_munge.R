@@ -3,7 +3,7 @@ munge_observed_data <- function(target_name, obs_data_fn, irr_data_fn, kd_data_f
   
   options(dplyr.summarise.inform = FALSE) # new dplyr 1.0 messaging is annoying so turn it off
   
-  observed_dat <- read_feather(obs_data_fn) %>% 
+  observed_dat <- arrow::read_feather(obs_data_fn) %>% 
     filter_observed_data() %>% 
     reformat_observed_data() %>% 
     join_observed_data(irr_data_fn, kd_data_fn) %>% 

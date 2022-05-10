@@ -4,17 +4,36 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
   start_tm <- Sys.time()
   
   if(tools::file_ext(site_file) == "feather") {
-    wtr_data <- read_feather(site_file) %>% 
-      select(site_id, date = DateTime, starts_with("temp_"))
+    # Feathers created with `arrow` fail when reading in with `feather::read_feather()`
+    # But feathers created with `feather` don't fail when reading in with `arrow:read_feather()`
+    wtr_data <- arrow::read_feather(site_file) %>% 
+      {
+        # Add the `site_id` column if it isn't present using the 
+        if(!"site_id" %in% names(.))
+          mutate(., site_id = site_id)
+        else .
+      } %>% 
+      # Different outputs for modeled lake temp have different colnames for the date
+      rename(date = matches("DateTime|time"))
   } else if(tools::file_ext(site_file) == "csv") {
     wtr_data <- read_csv(site_file) %>% 
-      mutate(site_id = site_id) %>% 
-      select(site_id, date, starts_with("temp_"))
+      mutate(site_id = site_id) 
   } else {
     stop(sprintf("Error with %s: file type not supported", site_file))
   }
   
+  if(!is.null(ice_file)) {
+    ice_data <- read_csv(ice_file, col_types = cols())
+  } else {
+    # If there is no `ice_file` provided, we assume that the `ice` column already exists
+    # in the data (as it should with the output from GLM projection output from Feb 2022)
+    # Extract that info and make a separate ice df
+    ice_data <- wtr_data %>% select(date, ice)
+  }
+  
   data_ready <- wtr_data %>% 
+    # If there is an `ice` column in wtr_data, then it will be removed
+    select(site_id, date, starts_with("temp_"), -matches("ice")) %>% 
     pivot_longer(cols = starts_with("temp_"), names_to = "depth", values_to = "wtr") %>% 
     mutate(depth = as.numeric(gsub("temp_", "", depth))) %>% 
     mutate(year = as.numeric(format(date, "%Y"))) %>% 
@@ -39,7 +58,7 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
               .groups = "keep") %>% 
     ungroup() %>% 
     # Read and join ice flags for this site (can join here because there is only one per day)
-    left_join(read_csv(ice_file, col_types = cols()), by = "date") %>% 
+    left_join(ice_data, by = "date") %>% 
     mutate(stratified = is_stratified(wtr_surf_daily, wtr_bot_daily, ice, force_warm = TRUE)) %>% 
     # Add year back in because it is dropped in `group_by` above
     mutate(year = as.numeric(format(date, "%Y"))) %>% 
@@ -59,6 +78,8 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
   # Need these summaries to be used by functions in the next one. Biggest reason is that other functions
   # need access to the following year's ice_on_date and can't use lead/lag unless outside of `summarize`
   pre_summary_data <- data_ready_with_flags %>% 
+    # `site_id` included here just so it exists in the final output; there should only be one site_id
+    # in the file passed to this function
     group_by(site_id, year) %>% 
     summarize(
       # Maximum observed surface temperature & corresponding date
@@ -78,6 +99,16 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
     # Open water duration will be NA if either ice_on_date or ice_off_date is NA
     # Needs to be calculated after ungrouping so we can use `lead`
     mutate(open_water_duration = as.numeric(ice_on_date_next - ice_off_date))
+  
+  # Separately summarize height, volume, days for desired temperature ranges in order
+  # to speed things up using `data.table` methods (this is the slowest part of the function)
+  # Hansen metrics
+  # See https://github.com/USGS-R/necsc-lake-modeling/blob/d37377ea422b9be324e8bd203fc6eecc36966401/data/habitat_metrics_table_GH.csv
+  annual_height_vol_days <- data_ready %>%  
+    calc_days_height_vol_within_range(
+      hypso, 
+      temp_low = temp_ranges$Temp_Low, 
+      temp_high = temp_ranges$Temp_High)
   
   annual_metrics <- data_ready_with_flags %>%
     # Join in pre-summarized data by year
@@ -119,13 +150,6 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
       mean_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "mean"),
       max_bot_mon = calc_monthly_summary_stat(date, wtr_bot_daily, "bot", "max"),
 
-      # Hansen metrics
-      # See https://github.com/USGS-R/necsc-lake-modeling/blob/d37377ea422b9be324e8bd203fc6eecc36966401/data/habitat_metrics_table_GH.csv
-
-      days_height_vol_in_range = calc_days_height_vol_within_range(date, depth, wtr, hypso,
-                                                                   temp_low = temp_ranges$Temp_Low,
-                                                                   temp_high = temp_ranges$Temp_High),
-
       spring_days_in_10.5_15.5 = spring_days_incub(date, wtr_surf_daily, c(10.5, 15.5)),
       post_ice_warm_rate = post_ice_warm_rate(date, wtr_surf_daily, ice_off_date),
       date_over_temps = calc_first_day_above_temp(date, wtr_surf_daily, temperatures = c(8.9, 16.7, 18, 21)), # Returns a df and needs to be unpacked below
@@ -137,12 +161,14 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
     unpack(cols = c(mean_surf_mon, max_surf_mon, mean_bot_mon, max_bot_mon,
                     mean_surf_jas, max_surf_jas, mean_bot_jas, max_bot_jas,
                     date_over_temps, date_below_temps,
-                    days_height_vol_in_range, metalimnion_derivatives)) %>%
+                    metalimnion_derivatives)) %>%
+    
     ungroup() %>% 
     # Remove next year's ice_on_date since it can be found by using `lead()`
-    select(-ice_on_date_next) %>% 
+    select(-ice_on_date_next) %>%
     # Move open_water_duration to end to match previous output
-    relocate(open_water_duration, .after = last_col())
+    relocate(open_water_duration, .after = last_col()) %>% 
+    left_join(annual_height_vol_days, by = "year")
   
   if(verbose) {
     message(sprintf("Completed annual metrics for %s in %s min", site_id, 
@@ -322,26 +348,30 @@ calc_monthly_summary_stat <- function(date, wtr_at_depth, depth_prefix, stat_typ
 }
 
 #' days in which there is any part of water column in a temperature range
-calc_days_height_vol_within_range <- function(date, depth, wtr, hypso, temp_low, temp_high) {
+calc_days_height_vol_within_range <- function(daily_data, hypso, temp_low, temp_high) {
   stopifnot(length(temp_low) == length(temp_high))
   
-  grpd_data <- tibble(date, depth, wtr) %>% 
-    group_by(date)
+  # Create a vector of names in the order we want them (height_[temp range 1], vol_[temp range 1], days_[temp range 1], etc)
+  temp_range_str <- sprintf("%s_%s", temp_low, temp_high)
+  out_colnames <- apply(expand.grid(c("height", "vol", "days"), temp_range_str), 1, paste, collapse = "_")
   
-  purrr::map(seq_along(temp_low), function(i, grpd_data, temp_low, temp_high, hypso) {
-    grpd_data %>% 
-      summarize(Z1_Z2 = find_Z1_Z2(wtr, depth, temp_high[i], temp_low[i]), .groups = "keep") %>% 
-      ungroup() %>% 
-      unpack(cols = Z1_Z2) %>% 
-      mutate(daily_height_in_range = Z2 - Z1,
-             daily_volume_in_range = calc_volume(Z1, Z2, hypso),
-             day_has_wtr_in_range = !is.na(daily_height_in_range) & daily_height_in_range > 0) %>% 
-      summarize(!!sprintf("height_%s_%s", temp_low[i], temp_high[i]) := sum(daily_height_in_range, na.rm = TRUE),
-                !!sprintf("vol_%s_%s", temp_low[i], temp_high[i]) := sum(daily_volume_in_range, na.rm = TRUE),
-                !!sprintf("days_%s_%s", temp_low[i], temp_high[i]) := sum(day_has_wtr_in_range))
-  }, grpd_data, temp_low, temp_high, hypso) %>% 
-    bind_cols()
-
+  setDT(daily_data)
+  
+  dt <- daily_data[, find_Z1_Z2(wtr, depth, temp_high, temp_low), by = list(year,date)][, `:=` (
+    height = as.numeric(Z2 - Z1),
+    vol = as.numeric(calc_volume(Z1, Z2, hypso))
+  )][, days := as.numeric(height > 0)
+     ][, c("Z1", "Z2") := NULL
+       ][, lapply(.SD, sum, na.rm = TRUE), .SDcols = c("height", "vol", "days"), by = list(year, temp_low, temp_high)]
+  
+  dt_wide <- dcast(dt, year ~ temp_low + temp_high, value.var = c("height", "vol", "days"))
+  setcolorder(dt_wide, c("year", out_colnames))
+  
+  setDF(dt_wide)
+  out <- as_tibble(dt_wide)
+  
+  return(out)
+  
 }
 
 #' duration of surface temperature between two temperatures degrees C (Spring only)
@@ -601,15 +631,14 @@ find_Z1_Z2 <- function(wtr, depth, wtr_upper_bound, wtr_lower_bound) {
       # which causes approx to throw an error. Return NAs for the Zs and let
       # checks below determine if benth area is all (or partially) above or 
       # below the lake and set Zs based on that.
-      Z1_Z2 <- c(NA,NA)
+      Z1 <- rep(NA, length(wtr_upper_bound))
+      Z2 <- rep(NA, length(wtr_lower_bound))
     } else {
       # Had to explicitly add `ties=mean` to suppress warning
       # https://community.rstudio.com/t/conditionally-interpolate-values-for-one-data-frame-based-on-another-lookup-table-per-group-solved/40922/5
-      Z1_Z2 <- approx(wtr, depth, xout=c(wtr_upper_bound, wtr_lower_bound), ties=mean)$y
+      Z1 <- approx(wtr, depth, xout=wtr_upper_bound, ties=mean)$y
+      Z2 <- approx(wtr, depth, xout=wtr_lower_bound, ties=mean)$y
     }
-    
-    Z1 <- Z1_Z2[1]
-    Z2 <- Z1_Z2[2]
     
     wtr_surface <- wtr[which.min(depth)] # wtr_surface will be whatever the top-most wtr is
     wtr_bottom <- wtr[which.max(depth)] # wtr_bottom will be whatever the bottom-most wtr is
@@ -634,10 +663,13 @@ find_Z1_Z2 <- function(wtr, depth, wtr_upper_bound, wtr_lower_bound) {
     Z2[extends_below_lake] <- z_max
   } else {
     # If there is only one non-NA wtr, then we can't figure out where Z1 and Z2 would be
-    Z1 <- NA
-    Z2 <- NA
+    Z1 <- rep(NA, length(wtr_upper_bound))
+    Z2 <- rep(NA, length(wtr_lower_bound))
   }
-  return(tibble(Z1 = Z1, Z2 = Z2))
+  return(data.table(temp_low = wtr_lower_bound, 
+                    temp_high = wtr_upper_bound, 
+                    Z1 = as.numeric(Z1), 
+                    Z2 = as.numeric(Z2)))
 }
 
 unique_day_data <- function(date, vec) {

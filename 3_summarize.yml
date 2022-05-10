@@ -1,8 +1,8 @@
 target_default: 3_summarize
 
 packages:
+  - arrow
   - dplyr
-  - feather
   - readr
   - tidyr
 
