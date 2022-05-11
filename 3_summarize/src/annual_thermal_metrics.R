@@ -1,6 +1,8 @@
 
 calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_file, temp_ranges_file, morphometry_ind, verbose = FALSE) {
   
+  if(!file.exists(site_file)) stop("File does not exist. If running summaries for GCM output, try changing `caldera_access_date` and build again.")
+  
   start_tm <- Sys.time()
   
   if(tools::file_ext(site_file) == "feather") {

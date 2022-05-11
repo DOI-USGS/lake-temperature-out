@@ -14,6 +14,10 @@ extract_morphometry <- function(config_fn) {
   return(morphometry_out)
 }
 
+nml_to_morphometry <- function(in_ind) {
+  purrr::map(readRDS(as_data_file(in_ind)), `[`, c("latitude", "longitude", "H", "A"))
+}
+
 unzip_data <- function(target_name, data_file, out_dir) {
   # Sometimes (as is the case with irradiance and clarity), the incoming
   # file has multiple zip files that need to be unpacked and saved

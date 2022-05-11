@@ -214,3 +214,9 @@ targets:
       "2_process/src/do_obs_lakes_tasks.R")
     depends:
       - morphometry
+
+##-- Munge files for GLM3 + GCM projections data release --##
+
+  # Not much munging required right now
+  glm3_pb0gcm_proj_morphometry:
+    command: nml_to_morphometry(in_ind = '1_fetch/out/pb0_temp_projections_nml.rds.ind')

@@ -7,6 +7,7 @@ packages:
 
 sources:
   - 1_fetch/src/fetch_sb_item_files.R
+  - 1_fetch/src/fetch_caldera_file_helpers.R
 
 targets:
   1_fetch:
@@ -28,6 +29,9 @@ targets:
       - 1_fetch/out/temperature_observations.zip
       - 1_fetch/out/pb0_matched_to_observations.zip
       - 1_fetch/out/pgdl_matched_to_observations.zip
+    # climate projections glm3 data release target
+      - 1_fetch/out/pb0_temp_projections.yml
+      - 1_fetch/out/pb0_temp_projections_nml.rds.ind
   
   sb_dl_date:
    command: c(I("2021-04-08"))
@@ -167,3 +171,36 @@ targets:
       sb_id = I("5e774324e4b01d509270e29f"), 
       sb_filename = I("pgdl_matched_to_observations.zip"),
       dummy = sb_dl_date)
+  
+  ##-- Access files for GLM3 + GCM projections data release --##
+  
+  # TODO: Switch to downloading the NetCDF file(s) from ScienceBase
+  # to use as input instead. That would be less brittle.
+  
+  # Identifying what lakes / GLM temp output files to use to for 
+  # lake thermal metrics summaries depends on us changing this 
+  # date to refresh the list of files and hashes. Not the most
+  # ideal process, but the function + practicality of this approach
+  # is a bit of a compromise right now so we can complete this work.
+  caldera_access_date:
+    command: c(I('2022-02-16'))
+  
+  # These files from our process-models pipeline are also pushed to ScienceBase
+  #   item `6206d3c2d34ec05caca53071` but since we are running this on Tallgrass
+  #   we have access to Caldera and can skip the need to re-download.
+  1_fetch/out/pb0_temp_projections.yml:
+    command: indicate_dir_files(
+      target_name, 
+      path = I('../lake-temperature-process-models/3_extract/out'), 
+      pattern = I('GLM_nhdhr_(.*)(GFDL|IPSL|MIROC5|MRI|ACCESS|CNRM).feather'))
+    depends: 
+      - caldera_access_date
+  
+  # These files from our process-models pipeline are also pushed to ScienceBase
+  #   item `6206d3c2d34ec05caca53071` but since we are running this on Tallgrass
+  #   we have access to Caldera and can skip the need to re-download.
+  1_fetch/out/pb0_temp_projections_nml.rds.ind:
+    command: copy_caldera_files(target_name, files_in = I('../lake-temperature-process-models/1_prep/in/nml_list.rds'))
+    depends: 
+      - caldera_access_date
+    
