@@ -6,7 +6,7 @@ plot_annual_metric_summaries <- function(target_name, in_file, target_dir, model
   
   annual_metrics_data <- readr::read_csv(in_file)
   
-  cols2plot <- names(annual_metrics_data)[which(!grepl(sprintf("site_id|year|_dt|_date|%s", model_id_colname), names(annual_metrics_data)))]
+  cols2plot <- names(annual_metrics_data)[which(!grepl(sprintf("site_id|GCM|year|_dt|_date|%s", model_id_colname), names(annual_metrics_data)))]
   
   annual_metrics_long <- annual_metrics_data %>% 
     select(-matches("_dt|_date")) %>% 
