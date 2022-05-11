@@ -1,4 +1,12 @@
 
+#' Indicate all files from a single directory into a single hash table
+indicate_dir_files <- function(out_ind, file_dir, file_pattern) {
+  files_to_indicate <- list.files(path = file_dir, 
+                                  pattern = file_pattern, 
+                                  full.names = TRUE)
+  sc_indicate(out_ind, data_file = files_to_indicate)
+}
+
 #' Use `out_dir` if you are copying multiple files and saving
 #' a hash table as the ind. Leave as `NULL` if you are only 
 #' copying and saving one file.

@@ -7,7 +7,7 @@ packages:
 
 sources:
   - 1_fetch/src/fetch_sb_item_files.R
-  - 1_fetch/src/copy_caldera_files.R
+  - 1_fetch/src/fetch_caldera_file_helpers.R
 
 targets:
   1_fetch:
@@ -188,15 +188,11 @@ targets:
   # These files from our process-models pipeline are also pushed to ScienceBase
   #   item `6206d3c2d34ec05caca53071` but since we are running this on Tallgrass
   #   we have access to Caldera and can skip the need to re-download.
-  pb0_temp_projections_feathers:
-    command: list.files(
-      path = I('../lake-temperature-process-models/3_extract/out'), 
-      pattern = I('GLM_nhdhr_(.*)(GFDL|IPSL|MIROC5|MRI|ACCESS|CNRM).feather'), 
-      full.names = I(TRUE))
-    depends: 
-      - caldera_access_date
   1_fetch/out/pb0_temp_projections.yml:
-    command: sc_indicate(target_name, data_file = pb0_temp_projections_feathers)
+    command: indicate_dir_files(
+      target_name, 
+      path = I('../lake-temperature-process-models/3_extract/out'), 
+      pattern = I('GLM_nhdhr_(.*)(GFDL|IPSL|MIROC5|MRI|ACCESS|CNRM).feather'))
     depends: 
       - caldera_access_date
   
