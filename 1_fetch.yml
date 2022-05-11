@@ -180,10 +180,9 @@ targets:
   # These files from our process-models pipeline are also pushed to ScienceBase
   #   item `6206d3c2d34ec05caca53071` but since we are running this on Tallgrass
   #   we have access to Caldera and can skip the need to re-download.
-  # TODO: change to 3_extract/out instead after the next full re-run
   pb0_temp_projections_feathers:
     command: list.files(
-      path = I('../lake-temperature-process-models/2_run/out'), 
+      path = I('../lake-temperature-process-models/3_extract/out'), 
       pattern = I('GLM_nhdhr_(.*)(GFDL|IPSL|MIROC5|MRI|ACCESS|CNRM).feather'), 
       full.names = I(TRUE))
     depends: 
