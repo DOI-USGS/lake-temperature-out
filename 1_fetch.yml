@@ -174,7 +174,7 @@ targets:
   
   ##-- Access files for GLM3 + GCM projections data release --##
   
-  caldera_cp_date:
+  caldera_access_date:
     command: c(I('2022-02-16'))
   
   # These files from our process-models pipeline are also pushed to ScienceBase
@@ -186,11 +186,11 @@ targets:
       pattern = I('GLM_nhdhr_(.*)(GFDL|IPSL|MIROC5|MRI|ACCESS|CNRM).feather'), 
       full.names = I(TRUE))
     depends: 
-      - caldera_cp_date
+      - caldera_access_date
   1_fetch/out/pb0_temp_projections.yml:
-    command: copy_caldera_files(target_name, files_in = pb0_temp_projections_feathers, out_dir = I('1_fetch/out'))
+    command: sc_indicate(target_name, data_file = pb0_temp_projections_feathers)
     depends: 
-      - caldera_cp_date
+      - caldera_access_date
   
   # These files from our process-models pipeline are also pushed to ScienceBase
   #   item `6206d3c2d34ec05caca53071` but since we are running this on Tallgrass
@@ -198,5 +198,5 @@ targets:
   1_fetch/out/pb0_temp_projections_nml.rds.ind:
     command: copy_caldera_files(target_name, files_in = I('../lake-temperature-process-models/1_prep/in/nml_list.rds'))
     depends: 
-      - caldera_cp_date
+      - caldera_access_date
     

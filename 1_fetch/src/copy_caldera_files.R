@@ -1,4 +1,7 @@
 
+#' Use `out_dir` if you are copying multiple files and saving
+#' a hash table as the ind. Leave as `NULL` if you are only 
+#' copying and saving one file.
 copy_caldera_files <- function(out_ind, files_in, out_dir = NULL) {
   
   if(is.null(out_dir)) {
