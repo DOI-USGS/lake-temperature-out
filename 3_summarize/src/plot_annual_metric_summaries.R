@@ -20,7 +20,7 @@ plot_annual_metric_summaries <- function(target_name, in_file, target_dir, model
       facet_grid(metric ~ ., scales = "free_y") +
       geom_point(alpha = 0.2, stroke = 0, shape = 16, size = 2)
     ggsave(sprintf("%s/%s_THROUGH_%s.png", target_dir, i[1], i[10]),
-           width = 5, height = 8)
+           plot = p, width = 5, height = 8)
   })
   
   scipiper::sc_indicate(target_name, data_file = unlist(files_out))
