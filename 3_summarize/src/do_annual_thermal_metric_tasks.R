@@ -108,7 +108,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   
   # Create the task plan
   task_plan_all_combos <- create_task_plan(
-    task_names = tasks$site_id,
+    task_names = unique(tasks$site_id),
     task_steps = task_steps_list,
     final_steps = final_step_name,
     add_complete = FALSE)
@@ -143,7 +143,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
     task_plan = task_plan,
     makefile = task_makefile,
     sources = c(...),
-    packages = c('tidyverse', 'purrr', 'readr', 'scipiper', 'arrow'),
+    packages = c('tidyverse', 'purrr', 'readr', 'scipiper', 'arrow', 'data.table'),
     final_targets = final_target,
     finalize_funs = 'combine_thermal_metrics',
     as_promises = TRUE,
@@ -152,7 +152,8 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   # Build the tasks
   loop_tasks(task_plan = task_plan,
              task_makefile = task_makefile,
-             num_tries = 3,
+             task_names = unique(tasks$site_id),
+             num_tries = 1,
              n_cores = n_cores)
   
   # Clean up files created
