@@ -57,6 +57,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   )
   
   # Depending on how many models per site, this will be a list of one or more steps
+  # Doing multiple here rather than another task table per model so that the morphometry files can be shared
   calc_annual_metrics <- purrr::map(model_type, function(model_type_i) { create_task_step(
     step_name = sprintf('calc_annual_metrics_%s', model_type_i),
     target_name = function(task_name, step_name, ...) {
