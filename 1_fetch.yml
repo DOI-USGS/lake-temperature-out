@@ -177,7 +177,9 @@ targets:
   caldera_cp_date:
     command: c(I('2022-02-16'))
   
-  # TODO: should I download from SB `6206d3c2d34ec05caca53071` or keep accessing using Caldera?
+  # These files from our process-models pipeline are also pushed to ScienceBase
+  #   item `6206d3c2d34ec05caca53071` but since we are running this on Tallgrass
+  #   we have access to Caldera and can skip the need to re-download.
   # TODO: change to 3_extract/out instead after the next full re-run
   pb0_temp_projections_feathers:
     command: list.files(
@@ -191,7 +193,9 @@ targets:
     depends: 
       - caldera_cp_date
   
-  # TODO: should I download from SB `6206d3c2d34ec05caca53071` or keep accessing using Caldera?
+  # These files from our process-models pipeline are also pushed to ScienceBase
+  #   item `6206d3c2d34ec05caca53071` but since we are running this on Tallgrass
+  #   we have access to Caldera and can skip the need to re-download.
   1_fetch/out/pb0_temp_projections_nml.rds.ind:
     command: copy_caldera_files(target_name, files_in = I('../lake-temperature-process-models/1_prep/in/nml_list.rds'))
     depends: 
