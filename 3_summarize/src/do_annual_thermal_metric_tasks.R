@@ -37,7 +37,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
     extract(wtr_filename, c('prefix','site_id','suffix'), site_file_regex, remove = FALSE) %>% 
     left_join(extract(tibble(ice_filename = ice_files), ice_filename, c('site_id'), ice_file_regex, remove = FALSE), by = "site_id") %>% 
     select(site_id, wtr_filename, ice_filename, model_id = matches(ifelse(suffix_as_model_id, "suffix", "prefix")))
-   
+  
   model_type <- pull(tasks, model_id) %>% unique()
   
   # Define task table columns

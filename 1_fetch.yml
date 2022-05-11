@@ -186,7 +186,6 @@ targets:
       full.names = I(TRUE))
     depends: 
       - caldera_cp_date
-
   1_fetch/out/pb0_temp_projections.yml:
     command: copy_caldera_files(target_name, files_in = pb0_temp_projections_feathers, out_dir = I('1_fetch/out'))
     depends: 
