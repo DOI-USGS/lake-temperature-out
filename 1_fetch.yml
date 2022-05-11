@@ -186,11 +186,29 @@ targets:
       full.names = I(TRUE))
     depends: 
       - caldera_cp_date
-  1_fetch/out/pb0_temp_projections.yml:
-    command: copy_caldera_files(target_name, files_in = pb0_temp_projections_feathers, out_dir = I('1_fetch/out'))
-    depends: 
-      - caldera_cp_date
+
+  ### DELETE AFTER TESTING 
+  #TEST_INDICES:
+  #  command: 1:10
+  #pb0_temp_projections_feathersTEST:
+  #  command: pb0_temp_projections_feathers[TEST_INDICES]
+  ### DELETE AFTER TESTING 
+
+  #1_fetch/out/pb0_temp_projections.yml:
+  #  command: copy_caldera_files(target_name, files_in = pb0_temp_projections_feathers, out_dir = I('1_fetch/out'))
+  #  depends: 
+  #    - caldera_cp_date
   
+  # HAD ERRORS WITH FILES - ONES AFTER i==716 THEY WEREN'T COPIED RIGHT? No idea why, this is a temporary workaround.
+  pb0_temp_projections_feathers_basenames:
+    command: basename(pb0_temp_projections_feathers)
+  pb0_temp_projections_feathers_newnames:
+    command: sprintf(I('1_fetch/out/%s'), pb0_temp_projections_feathers_basenames)
+  # MANUALLY COPIED THE FOLDER BY RUNNING `file.copy(pb0_temp_projections_feathers, pb0_temp_projections_feathers_newnames, overwrite=TRUE)`
+  # THEN USED THIS TARGET:
+  1_fetch/out/pb0_temp_projections.yml:
+    command: sc_indicate(target_name, data_file = pb0_temp_projections_feathers_newnames)
+
   # TODO: should I download from SB `6206d3c2d34ec05caca53071` or keep accessing using Caldera?
   1_fetch/out/pb0_temp_projections_nml.rds.ind:
     command: copy_caldera_files(target_name, files_in = I('../lake-temperature-process-models/1_prep/in/nml_list.rds'))
