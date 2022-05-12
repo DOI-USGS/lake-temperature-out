@@ -191,8 +191,8 @@ targets:
   1_fetch/out/pb0_temp_projections.yml:
     command: indicate_dir_files(
       target_name, 
-      path = I('../lake-temperature-process-models/3_extract/out'), 
-      pattern = I('GLM_nhdhr_(.*)(GFDL|IPSL|MIROC5|MRI|ACCESS|CNRM).feather'))
+      file_dir = I('../lake-temperature-process-models/3_extract/out'), 
+      file_pattern = I('GLM_nhdhr_(.*)(GFDL|IPSL|MIROC5|MRI|ACCESS|CNRM).feather'))
     depends: 
       - caldera_access_date
   
