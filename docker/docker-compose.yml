@@ -1,7 +1,7 @@
 version: "3.1"
 services:
-  glm_test:
-    image: jrossusgs/glm3r:v0.7
+  run_lake_metrics:
+    image: jrossusgs/lakesout:v0.1
     build:
       context: .
     ports:
