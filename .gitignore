@@ -24,3 +24,6 @@ Rlib_3_6/
 # jupyter notebooks
 *.ipynb
 .ipynb_checkpoints/
+
+# Singularity SIF files
+*.sif
