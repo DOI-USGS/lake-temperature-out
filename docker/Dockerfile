@@ -9,12 +9,6 @@ COPY DOIRootCA2.crt /usr/local/share/ca-certificates
 RUN update-ca-certificates
 ENV CURL_CA_BUNDLE /etc/ssl/certs/ca-certificates.crt
 
-# Use the local RStudio Teams CRAN mirror for R packages (this
-# requires VPN connection when building).
-RUN echo '\n\
-options(repos = c(REPO_NAME = "https://rpkg.chs.usgs.gov/prod-cran/latest"))\n'\
-  >> /usr/local/lib/R/etc/Rprofile.site
-
 # Dependencies
 RUN apt-get update && apt-get -y --no-install-recommends install \
   apt-utils \
@@ -26,8 +20,8 @@ RUN apt-get update && apt-get -y --no-install-recommends install \
 
 # Install our custom packages
 RUN Rscript -e 'library(remotes); \
-                install_github("USGS-R/scipiper", upgrade = "never"); \
-                install_github("richfitz/remake", upgrade = "never");' \
+                install_github("richfitz/remake", upgrade = "never"); \
+                install_github("USGS-R/scipiper", upgrade = "never");' \
   && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
 # Install the necessary pipeline and parallelization packages for R
