@@ -29,6 +29,7 @@ RUN install2.r --error \
   arrow \
   data.table \
   dplyr \
+  foreach \
   jsonlite \
   ncdfgeom \
   purrr \
