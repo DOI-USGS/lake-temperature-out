@@ -12,4 +12,7 @@
 
 module load R/3.6.3 nco/4.7.9 gdal/3.0.4 proj/6.2.1
 
+srun Rscript set_R_lib.R
 srun Rscript glm3pb0_gcms_run.R
+
+
