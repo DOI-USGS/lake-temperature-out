@@ -48,16 +48,10 @@ do_split_morph_tasks <- function(final_target, site_ids, n_cores, morphometry, .
     tickquote_combinee_objects = TRUE)
   
   # Build the tasks
-  
-  # loop_tasks was giving me an error:
-  # Error in target_run(target, store, quiet) : 
-  #   command for 3_summarize/out/split_morph_files.ind did not create file
-  # loop_tasks(task_plan = task_plan,
-  #            task_makefile = task_makefile,
-  #            task_names = tasks,
-  #            num_tries = 1,
-  #            n_cores = n_cores)
-  scmake(I(sprintf('%s_promise', basename(final_target))), remake_file=task_makefile)
+  loop_tasks(task_plan = task_plan,
+             task_makefile = task_makefile,
+             num_tries = 1,
+             n_cores = n_cores)
   
   # Clean up files created
 
@@ -71,4 +65,9 @@ do_split_morph_tasks <- function(final_target, site_ids, n_cores, morphometry, .
 
 }
 
-
+split_and_save_morphometry <- function(out_ind, morphometry_file, site_id) {
+  data_file <- as_data_file(out_ind)
+  morphometry <- readRDS(morphometry_file)
+  saveRDS(morphometry[[site_id]], data_file)
+  sc_indicate(ind_file = out_ind, data_file = data_file)
+}

@@ -42,7 +42,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
     tmpdir_suffix = tmpdir_suffix,
     morphometry = morphometry,
     n_cores = 1,
-    '3_summarize/src/do_annual_thermal_metric_tasks.R')
+    '3_summarize/src/do_split_morph_tasks.R')
   morph_files <- get_filenames_from_ind(morph_file_ind)
   morph_file_regex <- sprintf("3_summarize/tmp%s/(.*)_morphometry.rds.ind", tmpdir_suffix)
   
@@ -128,12 +128,5 @@ combine_model_thermal_metrics <- function(out_ind, model_id_colname, ...) {
   }) %>% 
     purrr::reduce(bind_rows) %>% 
     saveRDS(data_file)
-  sc_indicate(ind_file = out_ind, data_file = data_file)
-}
-
-split_and_save_morphometry <- function(out_ind, morphometry_file, site_id) {
-  data_file <- as_data_file(out_ind)
-  morphometry <- readRDS(morphometry_file)
-  saveRDS(morphometry[[site_id]], data_file)
   sc_indicate(ind_file = out_ind, data_file = data_file)
 }
