@@ -69,6 +69,8 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
                "ice_file = %s," = ifelse(is.na(task_info$ice_filename), 'I(NULL)', sprintf("'%s'", task_info$ice_filename)),
                "temp_ranges_file = '%s'," = temp_ranges_file,
                "morphometry_ind = '%s'," = task_info$morph_file,
+               "model_id = %s," = ifelse(is.null(task_info$model_id), 'I(NULL)', sprintf("I('%s')", task_info$model_id)),
+               "model_id_colname = %s," = ifelse(is.null(model_id_colname), 'I(NULL)', sprintf("I('%s')", model_id_colname)),
                # Doesn't actually print to console with `loop_tasks` but let's you see if you are troubleshooting individual files
                "verbose = I(TRUE))"
       )
@@ -115,18 +117,4 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
 
 combine_thermal_metrics <- function(target_name, ...) {
   purrr::map(list(...), function(ind) readRDS(as_data_file(ind))) %>% purrr::reduce(bind_rows) %>% readr::write_csv(target_name)
-}
-
-combine_model_thermal_metrics <- function(out_ind, model_id_colname, ...) {
-  data_file <- as_data_file(out_ind)
-  purrr::map(list(...), function(ind) {
-    rds_file <- as_data_file(ind)
-    file_pattern <- "(?<modelid>.*)_(?<sitenum>nhdhr_.*)_annual_thermal_metrics.rds" # based on target_name of `calc_annual_metrics` step
-    readRDS(rds_file) %>% 
-      mutate(model_id = str_match(basename(rds_file), file_pattern)[2]) %>% 
-      select(site_id, !!model_id_colname := model_id, everything())
-  }) %>% 
-    purrr::reduce(bind_rows) %>% 
-    saveRDS(data_file)
-  sc_indicate(ind_file = out_ind, data_file = data_file)
 }
