@@ -50,94 +50,40 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   tasks <- task_files %>%
     left_join(extract(tibble(ice_filename = ice_files), ice_filename, c('site_id'), ice_file_regex, remove = FALSE), by = "site_id") %>% 
     left_join(extract(tibble(morph_filename = morph_files), morph_filename, c('site_id'), morph_file_regex, remove = FALSE), by = "site_id") %>% 
-    select(site_id, wtr_filename, morph_filename, model_id = matches(ifelse(suffix_as_model_id, "suffix", "prefix"))) 
+    select(site_id, wtr_filename, morph_filename, model_id = matches(ifelse(suffix_as_model_id, "suffix", "prefix"))) %>% 
+    mutate(task_id = sprintf("%s_%s", model_id, site_id))
   
   # Define task table columns
   
-  # Depending on how many models per site, this will be a list of one or more steps
-  # Doing multiple here rather than another task table per model so that the morphometry files can be shared
-  calc_annual_metrics <- purrr::map(model_type, function(model_type_i) { create_task_step(
-    step_name = sprintf('calc_annual_metrics_%s', model_type_i),
+  calc_annual_metrics <- create_task_step(
+    step_name = 'calc_annual_metrics',
     target_name = function(task_name, step_name, ...) {
-      sprintf("3_summarize/tmp%s/%s_%s_annual_thermal_metrics.rds.ind", tmpdir_suffix, model_type_i, task_name)
+      sprintf("3_summarize/tmp%s/%s_annual_thermal_metrics.rds.ind", tmpdir_suffix, task_name)
     },
     command = function(..., task_name, steps) {
-      task_info <- filter(tasks, site_id == task_name, model_id == model_type_i)
-      # Return empty string (not `NULL` to avoid warnings) if there is no data for this 
-      # site_id + model_id combo (not all combos were successful runs)
-      if(nrow(task_info) == 0) return("") 
-      psprintf("calculate_annual_metrics_per_lake(", 
+      task_info <- filter(tasks, task_id == task_name)
+      psprintf("calculate_annual_metrics_per_lake(",
                "out_ind = target_name,",
-               "site_id = I('%s')," = task_name,
+               "site_id = I('%s')," = task_info$site_id,
                "site_file = '%s'," = task_info$wtr_filename,
                "ice_file = %s," = ifelse(is.na(task_info$ice_filename), 'I(NULL)', sprintf("'%s'", task_info$ice_filename)),
                "temp_ranges_file = '%s'," = temp_ranges_file,
                "morphometry_ind = '%s'," = task_info$morph_file,
                # Doesn't actually print to console with `loop_tasks` but let's you see if you are troubleshooting individual files
-               "verbose = I(TRUE))" 
+               "verbose = I(TRUE))"
       )
     }
-  )})
-  
-  # If there is more than one model type, we should combine them per task
-  # so that each task has the same "final" step that we can use for `final_steps`
-  if(length(calc_annual_metrics) > 1) {
-    combine_model_thermal_metrics <- scipiper::create_task_step(
-      step_name = 'combine_model_thermal_metrics',
-      target_name = function(task_name, step_name, ...){
-        sprintf("3_summarize/tmp%s/%s_annual_thermal_metrics.rds.ind", tmpdir_suffix, task_name)
-      },
-      command = function(..., task_name, steps){
-        calc_annual_metrics_steps <- steps[grepl('calc_annual_metrics_', names(steps))]
-        calc_annual_metrics_targets_str <- paste(sprintf("'%s'", sapply(calc_annual_metrics_steps, `[[`, "target_name")), collapse = ",")
-        psprintf("combine_model_thermal_metrics(", 
-                 "out_ind = target_name,",
-                 "model_id_colname = I('%s')," = model_id_colname,
-                 "%s)" = calc_annual_metrics_targets_str
-        )
-      } 
-    )
-    
-    task_steps_list <- c(list(split_morphometry), calc_annual_metrics, list(combine_model_thermal_metrics))
-    final_step_name <- "combine_model_thermal_metrics"
-  } else {
-    task_steps_list <- list(split_morphometry, calc_annual_metrics)
-    final_step_name <- "calc_annual_metrics"
-  }
+  )
   
   # Create the task plan
-  task_plan_all_combos <- create_task_plan(
-    task_names = unique(tasks$site_id),
-    task_steps = task_steps_list,
-    final_steps = final_step_name,
+  task_plan <- create_task_plan(
+    task_names = unique(tasks$task_id),
+    task_steps = list(calc_annual_metrics),
+    final_steps = "calc_annual_metrics",
     add_complete = FALSE)
   
-  # Remove any steps with empty commands (there wasn't a matching site_id + model_id combo)
-  task_plan <- lapply(task_plan_all_combos, function(task_def) {
-    missing_command <- sapply(task_def$steps, function(step_def) nchar(step_def$command) == 0)
-    missing_command_target_names <- sapply(task_def$steps[missing_command], `[[`, "target_name")
-    
-    # Remove the steps with missing commands
-    task_def$steps[missing_command] <- NULL
-    
-    # Also remove in the final step for combining if necessary by removing the filepaths to 
-    # target names that don't exist
-    task_final_step <- task_def$steps[[final_step_name]]
-    if(!is.null(task_final_step)) {
-      command_drop_target_names <- gsub(paste(missing_command_target_names, collapse="|"), "", task_final_step$command)
-      command_drop_target_names <- gsub(",''|'',", "", command_drop_target_names) # Remove leftover string syntax
-      task_def$steps[[final_step_name]]$command <- command_drop_target_names
-    }
-    
-    return(task_def)
-  })
-  
-  # Need to make sure `task_plan` attributes make it back
-  attributes(task_plan) <- attributes(task_plan_all_combos)
-  
-  
   # Create the task remakefile
-  task_makefile <- sprintf('3_summarize_%s_metric_tasks.yml', paste(model_type, collapse = ".")) # Collapse string if doing tasks for more than one model type
+  task_makefile <- "3_summarize_multidriver_metric_tasks.yml"
   create_task_makefile(
     task_plan = task_plan,
     makefile = task_makefile,
@@ -151,7 +97,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   # Build the tasks
   loop_tasks(task_plan = task_plan,
              task_makefile = task_makefile,
-             task_names = unique(tasks$site_id),
+             # Don't specify `task_names` so that the final combine target is built
              num_tries = 1,
              n_cores = n_cores)
   
