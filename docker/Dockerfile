@@ -40,6 +40,10 @@ RUN install2.r --error \
   tidyr \
   && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
+RUN install2.r --error \
+  doParallel \
+  && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
+
 # Fix umask problems with RStudio in singularity
 RUN echo "Sys.umask(mode=002)" >> /usr/local/lib/R/etc/Rprofile.site
 
