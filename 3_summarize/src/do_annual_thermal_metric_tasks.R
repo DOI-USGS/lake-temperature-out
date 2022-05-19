@@ -1,7 +1,7 @@
 
 do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_yml, n_cores, morphometry, temp_ranges, ...,
                                          site_file_regex = NULL, ice_file_regex = NULL, tmpdir_suffix = "", 
-                                         model_id_colname = NULL, suffix_as_model_id = TRUE) {
+                                         model_id_colname = NULL, suffix_as_model_id = TRUE, max_group_size = NULL) {
   
   # Each node on a Yeti normal partition has a max of 20 cores; nodes on Yeti UV partition do not have that same limit
   if(n_cores > 20) message("If using a node on the Yeti normal partition, you need to decrease n_cores to 20 or less")
@@ -77,26 +77,60 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
     }
   )
   
+  # To minimize the number of files being checked for each build, we are going to create separate 
+  # task makefiles by grouping the tasks into manageable chunks. Note that changing the max group
+  # size doesn't cause the individual targets for each lake-driver combo to rebuild since they are 
+  # tracked as being complete by their build/ & ind files, not which group makefile they are in. 
+  # If no max_group_size is passed in, assume all tasks are in one makefile.
+  if(is.null(max_group_size)) max_group_size <- length(unique(tasks$task_id))
+  task_groups <- select(tasks, task_id) %>% 
+    unique() %>% 
+    mutate(row_n = row_number()) %>% 
+    mutate(task_grp = ((row_n - 1) %/% max_group_size)+1)
+  
+  source_vec <- c(...) # Need to combine before `purrr::map()`
+  grp_inds <- task_groups %>% 
+    split(.$task_grp) %>% 
+    purrr::map(~execute_single_group_task_plan(
+      final_target_subset = sprintf("3_summarize/out%s/multidriver_annual_metrics_grp_%s.ind", 
+                                    tmpdir_suffix, unique(.x$task_grp)),
+      task_names_subset = .x$task_id,
+      task_steps_list = list(calc_annual_metrics),
+      final_steps = "calc_annual_metrics",
+      sources = source_vec,
+      n_cores
+    ))
+  
+  combine_group_inds_to_csv(final_target, grp_inds)
+  
+  # Delete temporary files saved in order to decouple task makefile from `remake.yml`.
+  file.remove(temp_ranges_file)
+  
+}
+
+execute_single_group_task_plan <- function(final_target_subset, task_names_subset, 
+                                           task_steps_list, final_steps, sources, n_cores) {
+  
   # Create the task plan
   task_plan <- create_task_plan(
-    task_names = unique(tasks$task_id),
-    task_steps = list(calc_annual_metrics),
-    final_steps = "calc_annual_metrics",
+    task_names = task_names_subset,
+    task_steps = task_steps_list,
+    final_steps = final_steps,
     add_complete = FALSE)
   
   # Create the task remakefile
-  task_makefile <- "3_summarize_multidriver_metric_tasks.yml"
+  task_makefile <- '3_summarize_multidriver_metric_tasks.yml'
   create_task_makefile(
     task_plan = task_plan,
     makefile = task_makefile,
-    sources = c(...),
+    sources = sources,
     packages = c('tidyverse', 'purrr', 'readr', 'scipiper', 'arrow', 'data.table'),
-    final_targets = final_target,
-    finalize_funs = 'combine_thermal_metrics',
+    final_targets = final_target_subset,
+    finalize_funs = 'combine_model_thermal_metrics_to_ind',
     as_promises = TRUE,
     tickquote_combinee_objects = TRUE)
   
-  # Build the tasks
+  # Build all the tasks in the current group makefile
   loop_tasks(task_plan = task_plan,
              task_makefile = task_makefile,
              # Don't specify `task_names` so that the final combine target is built
@@ -107,14 +141,34 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   
   # Remove the temporary target from remake's DB; it won't necessarily be a unique  
   #   name and we don't need it to persist, especially since killing the task yaml
-  scdel(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile)
+  scdel(sprintf("%s_promise", basename(final_target_subset)), remake_file=task_makefile)
   # Delete task makefile since it is only needed internally for this function and  
-  #   not needed at all once loop_tasks is complete. Also delete temporary files
-  #   saved in order to decouple task makefile from `remake.yml`.
-  file.remove(task_makefile, morph_file, temp_ranges_file)
+  #   not needed at all once loop_tasks is complete. 
+  file.remove(task_makefile)
+  
+  return(final_target_subset)
   
 }
 
-combine_thermal_metrics <- function(target_name, ...) {
-  purrr::map(list(...), function(ind) readRDS(as_data_file(ind))) %>% purrr::reduce(bind_rows) %>% readr::write_csv(target_name)
+# This is called by both `combine_model_thermal_metrics_to_ind()`
+#   and `combine_group_inds_to_csv()` and reads in, then 
+combine_model_thermal_metrics <- function(ind_list) {
+  purrr::map(ind_list, function(ind) {
+    readRDS(as_data_file(ind))
+  }) %>% 
+    purrr::reduce(bind_rows)
+}
+
+# This is used at the end of each task makefile
+combine_model_thermal_metrics_to_ind <- function(out_ind, ...) {
+  data_file <- as_data_file(out_ind)
+  combine_model_thermal_metrics(list(...)) %>% saveRDS(data_file)
+  sc_indicate(ind_file = out_ind, data_file = data_file)
+}
+
+# Used to combine the inds from each group iteration of the 
+# task makefiles into one big CSV
+combine_group_inds_to_csv <- function(target_name, ind_list) {
+  combine_model_thermal_metrics(ind_list) %>% 
+    readr::write_csv(target_name)
 }
