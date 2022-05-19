@@ -126,7 +126,7 @@ execute_single_group_task_plan <- function(final_target_subset, task_names_subse
     sources = sources,
     packages = c('tidyverse', 'purrr', 'readr', 'scipiper', 'arrow', 'data.table'),
     final_targets = final_target_subset,
-    finalize_funs = 'combine_model_thermal_metrics_to_ind',
+    finalize_funs = 'combine_to_ind',
     as_promises = TRUE,
     tickquote_combinee_objects = TRUE)
   
@@ -150,8 +150,16 @@ execute_single_group_task_plan <- function(final_target_subset, task_names_subse
   
 }
 
-# This is called by both `combine_model_thermal_metrics_to_ind()`
-#   and `combine_group_inds_to_csv()` and reads in, then 
+# Combine all inds listing thermal metrics RDS inds
+# into a single vector of the data file inds
+flatten_inds <- function(nested_ind_list) {
+  purrr::map(nested_ind_list, function(ind_list) {
+    yaml::yaml.load_file(ind_list) %>% names()
+  }) %>% purrr::reduce(c)
+}
+
+# This is called by both `combine_group_inds_to_csv()` and reads in
+# the data files, then combines into a single table 
 combine_model_thermal_metrics <- function(ind_list) {
   purrr::map(ind_list, function(ind) {
     readRDS(as_data_file(ind))
@@ -159,16 +167,11 @@ combine_model_thermal_metrics <- function(ind_list) {
     purrr::reduce(bind_rows)
 }
 
-# This is used at the end of each task makefile
-combine_model_thermal_metrics_to_ind <- function(out_ind, ...) {
-  data_file <- as_data_file(out_ind)
-  combine_model_thermal_metrics(list(...)) %>% saveRDS(data_file)
-  sc_indicate(ind_file = out_ind, data_file = data_file)
-}
-
-# Used to combine the inds from each group iteration of the 
-# task makefiles into one big CSV
+# Used to combine the inds from each group iteration of the task 
+# makefiles into one big CSV. Each `ind` inside of `ind_list` contains
+# a list of the individual RDS file inds that must be flattened first.
 combine_group_inds_to_csv <- function(target_name, ind_list) {
-  combine_model_thermal_metrics(ind_list) %>% 
+  flatten_inds(ind_list) %>% 
+  combine_model_thermal_metrics() %>% 
     readr::write_csv(target_name)
 }
