@@ -8,6 +8,10 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   
   site_files <- get_filenames_from_ind(site_file_yml)
   
+  # Define task table rows - one task per lake + driver
+  task_files <- tibble(wtr_filename = site_files) %>% 
+    extract(wtr_filename, c('prefix','site_id','suffix'), site_file_regex, remove = FALSE)
+  
   if(!is.null(ice_file_yml)) {
     ice_files <- get_filenames_from_ind(ice_file_yml) 
   } else {
@@ -26,35 +30,29 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   # to simplify the dependencies and complexity, we need to save some of the 
   # target objects used as files. Each task will read these new files but
   # we don't think that will be an issue, even when doing it in parallel.
-  morph_file <- sprintf("tasks_all_morphometry.rds")
-  saveRDS(morphometry, morph_file)
-  
   temp_ranges_file <- sprintf("temp_ranges.rds")
   saveRDS(temp_ranges, temp_ranges_file)
   
-  # Define task table rows
-  tasks <- tibble(wtr_filename = site_files) %>% 
-    extract(wtr_filename, c('prefix','site_id','suffix'), site_file_regex, remove = FALSE) %>% 
-    left_join(extract(tibble(ice_filename = ice_files), ice_filename, c('site_id'), ice_file_regex, remove = FALSE), by = "site_id") %>% 
-    select(site_id, wtr_filename, ice_filename, model_id = matches(ifelse(suffix_as_model_id, "suffix", "prefix")))
+  # Nest a makefile within this step to generate the separated morph files using `do_split_morph()`
+  # Doing this so that these are only done once per lake rather than once per task (lake + driver)
+  morph_file_ind <- sprintf('3_summarize/tmp%s/split_morph_files.ind', tmpdir_suffix)
+  do_split_morph_tasks(
+    final_target = morph_file_ind,
+    site_ids = unique(task_files$site_id),
+    tmpdir_suffix = tmpdir_suffix,
+    morphometry = morphometry,
+    n_cores = 1,
+    '3_summarize/src/do_annual_thermal_metric_tasks.R')
+  morph_files <- get_filenames_from_ind(morph_file_ind)
+  morph_file_regex <- sprintf("3_summarize/tmp%s/(.*)_morphometry.rds.ind", tmpdir_suffix)
   
-  model_type <- pull(tasks, model_id) %>% unique()
+  # Add additional config information for the tasks
+  tasks <- task_files %>%
+    left_join(extract(tibble(ice_filename = ice_files), ice_filename, c('site_id'), ice_file_regex, remove = FALSE), by = "site_id") %>% 
+    left_join(extract(tibble(morph_filename = morph_files), morph_filename, c('site_id'), morph_file_regex, remove = FALSE), by = "site_id") %>% 
+    select(site_id, wtr_filename, morph_filename, model_id = matches(ifelse(suffix_as_model_id, "suffix", "prefix"))) 
   
   # Define task table columns
-  
-  # I'm doing this because each toha task is slow running
-  # and if `morphometry` changes, we don't want to have to re-run all of them,
-  # just the ones where _their_ morphometry changed. So we are subsetting first. 
-  split_morphometry <- scipiper::create_task_step(
-    step_name = 'split_morphometry',
-    target_name = function(task_name, step_name, ...){
-      
-      sprintf("3_summarize/tmp%s/%s_morphometry.rds.ind", tmpdir_suffix, task_name)
-    },
-    command = function(task_name, ...){
-      sprintf("split_and_save_morphometry(target_name, '%s', I('%s'))", morph_file, task_name)
-    } 
-  )
   
   # Depending on how many models per site, this will be a list of one or more steps
   # Doing multiple here rather than another task table per model so that the morphometry files can be shared
@@ -74,7 +72,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
                "site_file = '%s'," = task_info$wtr_filename,
                "ice_file = %s," = ifelse(is.na(task_info$ice_filename), 'I(NULL)', sprintf("'%s'", task_info$ice_filename)),
                "temp_ranges_file = '%s'," = temp_ranges_file,
-               "morphometry_ind = '%s'," = steps[["split_morphometry"]]$target_name,
+               "morphometry_ind = '%s'," = task_info$morph_file,
                # Doesn't actually print to console with `loop_tasks` but let's you see if you are troubleshooting individual files
                "verbose = I(TRUE))" 
       )
