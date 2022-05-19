@@ -126,7 +126,7 @@ execute_single_group_task_plan <- function(final_target_subset, task_names_subse
     sources = sources,
     packages = c('tidyverse', 'purrr', 'readr', 'scipiper', 'arrow', 'data.table'),
     final_targets = final_target_subset,
-    finalize_funs = 'combine_to_ind',
+    finalize_funs = 'combine_to_ind_override',
     as_promises = TRUE,
     tickquote_combinee_objects = TRUE)
   
@@ -156,6 +156,22 @@ flatten_inds <- function(nested_ind_list) {
   purrr::map(nested_ind_list, function(ind_list) {
     yaml::yaml.load_file(ind_list) %>% names()
   }) %>% purrr::reduce(c)
+}
+
+# I wanted the same indicator with filename: hash, even if there
+# is only one file output. `combine_to_ind()` calls `sc_indicate()`
+# which only returns the hash if there is one file.This uses some
+# of the code from within sc_indicate() to do what we need here.
+combine_to_ind_override <- function(ind_file, ...) {
+  data_file <- c(...)
+  info_list <- list()
+  for (file in data_file) {
+    info_list[[file]] <- unname(tools::md5sum(file))
+  }
+  if (!dir.exists(dirname(ind_file))) 
+    dir.create(dirname(ind_file), recursive = TRUE)
+  readr::write_lines(yaml::as.yaml(info_list), ind_file)
+  return(invisible(NULL))
 }
 
 # This is called by both `combine_group_inds_to_csv()` and reads in
