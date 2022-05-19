@@ -50,7 +50,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   tasks <- task_files %>%
     left_join(extract(tibble(ice_filename = ice_files), ice_filename, c('site_id'), ice_file_regex, remove = FALSE), by = "site_id") %>% 
     left_join(extract(tibble(morph_filename = morph_files), morph_filename, c('site_id'), morph_file_regex, remove = FALSE), by = "site_id") %>% 
-    select(site_id, wtr_filename, morph_filename, model_id = matches(ifelse(suffix_as_model_id, "suffix", "prefix"))) %>% 
+    select(site_id, wtr_filename, ice_filename, morph_filename, model_id = matches(ifelse(suffix_as_model_id, "suffix", "prefix"))) %>% 
     mutate(task_id = sprintf("%s_%s", model_id, site_id))
   
   # Define task table columns
@@ -68,7 +68,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
                "site_file = '%s'," = task_info$wtr_filename,
                "ice_file = %s," = ifelse(is.na(task_info$ice_filename), 'I(NULL)', sprintf("'%s'", task_info$ice_filename)),
                "temp_ranges_file = '%s'," = temp_ranges_file,
-               "morphometry_ind = '%s'," = task_info$morph_file,
+               "morphometry_ind = '%s'," = task_info$morph_filename,
                "model_id = %s," = ifelse(is.null(task_info$model_id), 'I(NULL)', sprintf("I('%s')", task_info$model_id)),
                "model_id_colname = %s," = ifelse(is.null(model_id_colname), 'I(NULL)', sprintf("I('%s')", model_id_colname)),
                # Doesn't actually print to console with `loop_tasks` but let's you see if you are troubleshooting individual files
