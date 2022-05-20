@@ -28,6 +28,7 @@ RUN Rscript -e 'library(remotes); \
 RUN install2.r --error \
   arrow \
   data.table \
+  doParallel \
   dplyr \
   foreach \
   jsonlite \
@@ -35,13 +36,10 @@ RUN install2.r --error \
   purrr \
   readr \
   retry \
+  rLakeAnalyzer \
   RNetCDF \
   sbtools \
   tidyr \
-  && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
-
-RUN install2.r --error \
-  doParallel \
   && rm -rf /tmp/downloaded_packages/ /tmp/*.rds
 
 # Fix umask problems with RStudio in singularity
