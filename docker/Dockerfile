@@ -28,12 +28,15 @@ RUN Rscript -e 'library(remotes); \
 RUN install2.r --error \
   arrow \
   data.table \
+  doParallel \
   dplyr \
+  foreach \
   jsonlite \
   ncdfgeom \
   purrr \
   readr \
   retry \
+  rLakeAnalyzer \
   RNetCDF \
   sbtools \
   tidyr \

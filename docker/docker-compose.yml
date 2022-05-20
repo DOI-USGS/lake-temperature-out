@@ -1,7 +1,7 @@
 version: "3.1"
 services:
   run_lake_metrics:
-    image: jrossusgs/lake-temperature-out:v0.1
+    image: jrossusgs/lake-temperature-out:v0.2.2
     build:
       context: .
     ports:

@@ -13,6 +13,6 @@
 module load singularity
 
 srun singularity exec \
-    lake-temperature-out_v0.1.sif \
+    lake-temperature-out.sif \
     Rscript glm3pb0_gcms_run.R
 
