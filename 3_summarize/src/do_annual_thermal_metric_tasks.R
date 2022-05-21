@@ -1,16 +1,14 @@
 
-do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_yml, n_cores, morphometry, temp_ranges, ...,
-                                         site_file_regex = NULL, ice_file_regex = NULL, tmpdir_suffix = "", 
+do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_yml, morphometry_file_ind, n_cores, temp_ranges, ...,
+                                         site_file_regex = NULL, ice_file_regex = NULL, morph_file_regex = NULL, tmpdir_suffix = "", 
                                          model_id_colname = NULL, suffix_as_model_id = TRUE, max_group_size = NULL) {
   
   # Each node on a Yeti normal partition has a max of 20 cores; nodes on Yeti UV partition do not have that same limit
   if(n_cores > 20) message("If using a node on the Yeti normal partition, you need to decrease n_cores to 20 or less")
   
+  # Load input filepaths from inds
   site_files <- get_filenames_from_ind(site_file_yml)
-  
-  # Define task table rows - one task per lake + driver
-  task_files <- tibble(wtr_filename = site_files) %>% 
-    extract(wtr_filename, c('prefix','site_id','suffix'), site_file_regex, remove = FALSE)
+  morph_files <- get_filenames_from_ind(morphometry_file_ind)
   
   if(!is.null(ice_file_yml)) {
     ice_files <- get_filenames_from_ind(ice_file_yml) 
@@ -18,11 +16,15 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
     ice_files <- ""
   }
   
+  # Handle missing regex (was a way to grandfather in older targets)
   if(is.null(site_file_regex)) {
     site_file_regex <- "(pb0|pball|pgdl)_data_(.*)(.feather)"
   }
   if(is.null(ice_file_regex)) {
     ice_file_regex <- "pb0_(.*)_ice_flags.csv"
+  }
+  if(is.null(morph_file_regex)) {
+    morph_file_regex <- "(.*)_morphometry.rds"
   }
   
   # Having `remake.yml` listed in "include" for these large task plans
@@ -33,21 +35,9 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   temp_ranges_file <- sprintf("temp_ranges.rds")
   saveRDS(temp_ranges, temp_ranges_file)
   
-  # Nest a makefile within this step to generate the separated morph files using `do_split_morph()`
-  # Doing this so that these are only done once per lake rather than once per task (lake + driver)
-  morph_file_ind <- sprintf('3_summarize/tmp%s/split_morph_files.ind', tmpdir_suffix)
-  do_split_morph_tasks(
-    final_target = morph_file_ind,
-    site_ids = unique(task_files$site_id),
-    tmpdir_suffix = tmpdir_suffix,
-    morphometry = morphometry,
-    n_cores = 1,
-    '3_summarize/src/do_split_morph_tasks.R')
-  morph_files <- get_filenames_from_ind(morph_file_ind)
-  morph_file_regex <- sprintf("3_summarize/tmp%s/(.*)_morphometry.rds.ind", tmpdir_suffix)
-  
-  # Add additional config information for the tasks
-  tasks <- task_files %>%
+  # Define task table rows - one task per lake + driver
+  tasks <- tibble(wtr_filename = site_files) %>% 
+    extract(wtr_filename, c('prefix','site_id','suffix'), site_file_regex, remove = FALSE) %>% 
     left_join(extract(tibble(ice_filename = ice_files), ice_filename, c('site_id'), ice_file_regex, remove = FALSE), by = "site_id") %>% 
     left_join(extract(tibble(morph_filename = morph_files), morph_filename, c('site_id'), morph_file_regex, remove = FALSE), by = "site_id") %>% 
     select(site_id, wtr_filename, ice_filename, morph_filename, model_id = matches(ifelse(suffix_as_model_id, "suffix", "prefix"))) %>% 
@@ -98,7 +88,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
       task_steps_list = list(calc_annual_metrics),
       final_steps = "calc_annual_metrics",
       sources = source_vec,
-      n_cores
+      n_cores = n_cores
     ))
   
   combine_group_inds_to_csv(final_target, grp_inds)
@@ -188,6 +178,6 @@ combine_model_thermal_metrics <- function(ind_list) {
 # a list of the individual RDS file inds that must be flattened first.
 combine_group_inds_to_csv <- function(target_name, ind_list) {
   flatten_inds(ind_list) %>% 
-  combine_model_thermal_metrics() %>% 
+    combine_model_thermal_metrics() %>% 
     readr::write_csv(target_name)
 }

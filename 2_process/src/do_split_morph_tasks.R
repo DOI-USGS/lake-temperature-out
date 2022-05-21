@@ -1,10 +1,10 @@
-# Special functions for efficiently building GCM targets since the files are 18x the number of lakes
-# and checking whether the tasks are complete is a very slow step.
+# Split morphometry into separate files per lake to avoid too many processes trying to access the same file
+# Doing this so that these are only done once per lake rather than once per task (lake + driver)
 
-do_split_morph_tasks <- function(final_target, site_ids, n_cores, morphometry, ..., tmpdir_suffix = "") {
+do_split_morph_tasks <- function(final_target, dir, n_cores, morphometry, ...) {
   
   # Use site numbers as tasks
-  tasks <- unique(site_ids)
+  tasks <- names(morphometry)
   
   # Having `remake.yml` listed in "include" for these large task plans
   # is expensive. In order to decouple the task makefile from `remake.yml`
@@ -22,7 +22,7 @@ do_split_morph_tasks <- function(final_target, site_ids, n_cores, morphometry, .
   split_morphometry <- scipiper::create_task_step(
     step_name = 'split_morphometry',
     target_name = function(task_name, step_name, ...){
-      sprintf("3_summarize/tmp%s/%s_morphometry.rds.ind", tmpdir_suffix, task_name)
+      sprintf("%s/%s_morphometry.rds.ind", dir, task_name)
     },
     command = function(task_name, ...){
       sprintf("split_and_save_morphometry(target_name, '%s', I('%s'))", morph_file, task_name)
@@ -44,6 +44,7 @@ do_split_morph_tasks <- function(final_target, site_ids, n_cores, morphometry, .
     sources = c(...),
     packages = c('scipiper'),
     final_targets = final_target,
+    finalize_funs = 'combine_to_ind_override',
     as_promises = TRUE,
     tickquote_combinee_objects = TRUE)
   
@@ -57,7 +58,7 @@ do_split_morph_tasks <- function(final_target, site_ids, n_cores, morphometry, .
 
   # Remove the temporary target from remake's DB; it won't necessarily be a unique
   #   name and we don't need it to persist, especially since killing the task yaml
-  scdel(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile)
+  # scdel(sprintf("%s_promise", basename(final_target)), remake_file=task_makefile)
   # Delete task makefile since it is only needed internally for this function and
   #   not needed at all once loop_tasks is complete. Also delete temporary files
   #   saved in order to decouple task makefile from `remake.yml`.
