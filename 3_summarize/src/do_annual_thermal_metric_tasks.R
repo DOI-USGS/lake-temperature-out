@@ -42,7 +42,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
     left_join(extract(tibble(morph_filename = morph_files), morph_filename, c('site_id'), morph_file_regex, remove = FALSE), by = "site_id") %>% 
     select(site_id, wtr_filename, ice_filename, morph_filename, model_id = matches(ifelse(suffix_as_model_id, "suffix", "prefix"))) %>% 
     mutate(task_id = sprintf("%s_%s", model_id, site_id))
-  
+
   # Define task table columns
   
   calc_annual_metrics <- create_task_step(
@@ -57,7 +57,7 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
                "site_id = I('%s')," = task_info$site_id,
                "site_file = '%s'," = task_info$wtr_filename,
                "ice_file = %s," = ifelse(is.na(task_info$ice_filename), 'I(NULL)', sprintf("'%s'", task_info$ice_filename)),
-               "temp_ranges_file = '%s'," = temp_ranges_file,
+               "temp_ranges_file = I('%s')," = temp_ranges_file,
                "morphometry_ind = '%s'," = task_info$morph_filename,
                "model_id = %s," = ifelse(is.null(task_info$model_id), 'I(NULL)', sprintf("I('%s')", task_info$model_id)),
                "model_id_colname = %s," = ifelse(is.null(model_id_colname), 'I(NULL)', sprintf("I('%s')", model_id_colname)),
