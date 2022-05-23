@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=thermalmetrics   	# name that you chose
 #SBATCH --partition=cpu         	# the partition you want to use, for this case prod is best
-#SBATCH --cpus-per-task=71		# Number of cores (Hayley mentioned that 80 caused issues)
+#SBATCH --cpus-per-task=72		# Number of cores (Hayley mentioned that 80 caused issues)
 #SBATCH --nodes=1			# Number of nodes
 #SBATCH -A iidd                 	# List account
 #SBATCH --output=glm3pb0_gcms.out	# file to save output messages to
@@ -11,6 +11,8 @@
 #SBATCH --mail-user=lplatt@usgs.gov
 
 module load singularity
+
+ulimit -u 1541404
 
 srun singularity exec \
     lake-temperature-out.sif \
