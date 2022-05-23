@@ -14,6 +14,7 @@ sources:
   - 2_process/src/do_lake_toha_tasks.R
   - 2_process/src/observed_data_helpers_prepare.R
   - 2_process/src/do_obs_lakes_tasks.R
+  - 2_process/src/do_split_morph_tasks.R
 
 targets:
   2_process:
