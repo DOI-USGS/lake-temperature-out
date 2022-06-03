@@ -22,3 +22,21 @@ copy_caldera_files <- function(out_ind, files_in, out_dir = NULL) {
   sc_indicate(out_ind, data_file = files_out)
   
 }
+
+#' @title Extract filenames from a table 
+#' @description Using an output table of files from successful GLM
+#' runs, extract the filenames and hashes and save into a yml.
+#' @param glm_run_output_file filepath of a CSV file with at least
+#' the columns, `export_fl` and `export_fl_hash`
+extract_glm_files <- function(out_ind, glm_run_output_file) {
+  
+  files_to_indicate <- file.path(glm_run_output_file) %>% 
+    readr::read_csv() %>% 
+    ## TODO: DELETE THIS FILTER ##
+    filter(state == "MN") %>% 
+    ## ^^ DELETE THAT^^
+    mutate(filepath = file.path('../lake-temperature-process-models', export_fl)) %>% 
+    pull(filepath)
+  
+  sc_indicate(out_ind, data_file = files_to_indicate)
+} 

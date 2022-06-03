@@ -229,12 +229,15 @@ targets:
       regex = glm3_pb0gcm_temp_file_regex,
       regex_grp_nms = glm3_pb0gcm_temp_file_regex_grp_nms)
   glm3_pb0nldas_site_ids:
-    command: c()
+    command: extract_site_ids(
+      file_ind = "1_fetch/out/glm3_pb0nldas_temp_files.yml",
+      regex = glm3_pb0nldas_temp_file_regex,
+      regex_grp_nms = glm3_pb0nldas_temp_file_regex_grp_nms)
   
   # Not much munging required right now
   glm3_nml_morphometry_subset:
     command: nml_to_morphometry_subset(
-      in_ind = '1_fetch/out/pb0_temp_projections_nml.rds.ind',
+      in_ind = '1_fetch/out/nml_list.rds.ind',
       glm3_pb0gcm_site_ids,
       glm3_pb0nldas_site_ids)
   2_process/out/split_morph_files.ind:
