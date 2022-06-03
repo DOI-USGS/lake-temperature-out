@@ -40,9 +40,10 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
     extract(wtr_filename, c('prefix','site_id','suffix'), site_file_regex, remove = FALSE) %>% 
     left_join(extract(tibble(ice_filename = ice_files), ice_filename, c('site_id'), ice_file_regex, remove = FALSE), by = "site_id") %>% 
     left_join(extract(tibble(morph_filename = morph_files), morph_filename, c('site_id'), morph_file_regex, remove = FALSE), by = "site_id") %>% 
+    filter(!is.na(morph_filename)) %>% 
     select(site_id, wtr_filename, ice_filename, morph_filename, model_id = matches(ifelse(suffix_as_model_id, "suffix", "prefix"))) %>% 
     mutate(task_id = sprintf("%s_%s", model_id, site_id))
-
+  
   # Define task table columns
   
   calc_annual_metrics <- create_task_step(
