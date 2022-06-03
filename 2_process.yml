@@ -14,7 +14,7 @@ sources:
   - 2_process/src/do_lake_toha_tasks.R
   - 2_process/src/observed_data_helpers_prepare.R
   - 2_process/src/do_obs_lakes_tasks.R
-  - 2_process/src/do_split_morph_tasks.R
+  - 2_process/src/split_morphometry.R
 
 targets:
   2_process:
@@ -238,11 +238,8 @@ targets:
       glm3_pb0gcm_site_ids,
       glm3_pb0nldas_site_ids)
   2_process/out/split_morph_files.ind:
-    command: do_split_morph_tasks(
+    command: split_morphometry(
       final_target = target_name,
-      dir = I('2_process/morph_files'),
-      morphometry = glm3_nml_morphometry_subset,
-      n_cores = 60,
-      '2_process/src/do_split_morph_tasks.R',
-      '3_summarize/src/do_annual_thermal_metric_tasks.R')
+      dir = I('2_process/out/morph_files'),
+      morphometry = glm3_nml_morphometry_subset)
   
