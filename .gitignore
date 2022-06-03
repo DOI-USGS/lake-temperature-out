@@ -7,16 +7,18 @@
 .Ruserdata
 .httr-oauth
 
-# R library on Yeti
+# HPC files that shouldn't be committed
 Rlib_3_6/
+*.out
 
 # scipiper-specific files and folders
 */tmp/*
-*/tmp_glm2/*
+*/tmp_*/*
 !1_fetch/tmp/EMPTY
 !2_process/tmp/EMPTY
 !3_summarize/tmp/EMPTY
 */out/*
+*/out_*/*
 .remake
 *_tasks.yml
 */status/*
