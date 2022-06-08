@@ -186,7 +186,7 @@ targets:
   caldera_access_date_nml:
     command: c(I('2022-06-01'))
   caldera_access_date_gcm:
-    command: c(I('2022-06-01'))
+    command: c(I('2022-06-06'))
   caldera_access_date_nldas:
     command: c(I('2022-06-01'))
   
