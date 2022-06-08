@@ -138,7 +138,7 @@ targets:
       n_cores = 65,
       temp_ranges = temp_ranges,
       site_file_regex = glm3_pb0gcm_temp_file_regex,
-      morph_file_regex = I("2_process/morph_files/(.*)_morphometry.rds.ind"),
+      morph_file_regex = I("2_process/out/morph_files/(.*)_morphometry.rds.ind"),
       tmpdir_suffix = I("_glm3_pb0gcm"),
       model_id_colname = I("GCM"), 
       suffix_as_model_id = I(TRUE),
