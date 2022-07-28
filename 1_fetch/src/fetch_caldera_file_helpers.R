@@ -32,9 +32,6 @@ extract_glm_files <- function(out_ind, glm_run_output_file) {
   
   files_to_indicate <- file.path(glm_run_output_file) %>% 
     readr::read_csv() %>% 
-    ## TODO: DELETE THIS FILTER ##
-    filter(state == "MN") %>% 
-    ## ^^ DELETE THAT^^
     mutate(filepath = file.path('../lake-temperature-process-models', export_fl)) %>% 
     pull(filepath)
   
