@@ -10,7 +10,7 @@
 #SBATCH --mail-type=ALL
 #SBATCH --mail-user=lplatt@usgs.gov
 
-module load singularity
+module load singularity/3.3.0
 
 ulimit -u 1541404
 
