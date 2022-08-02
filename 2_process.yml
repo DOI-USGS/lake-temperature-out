@@ -14,6 +14,7 @@ sources:
   - 2_process/src/do_lake_toha_tasks.R
   - 2_process/src/observed_data_helpers_prepare.R
   - 2_process/src/do_obs_lakes_tasks.R
+  - 2_process/src/split_morphometry.R
 
 targets:
   2_process:
@@ -28,6 +29,8 @@ targets:
       - 2_process/out/glm2_iceflags_unzipped.yml
     # error estimation temp data targets
       - 2_process/out/combined_obs_toha.csv
+    # 2022 runs
+      - 2_process/out/split_morph_files.ind
   
 ##-- MN TOHA Data Release --##
   
@@ -215,8 +218,31 @@ targets:
     depends:
       - morphometry
 
-##-- Munge files for GLM3 + GCM projections data release --##
+##-- Munge files for GLM3 + GCM projections + updated NLDAS data release --##
 
+  # Extract valid sites to use for subsetting the NML list
+  # First ones are based on the projections but we can combine
+  # the NLDAS ones as well, so that we are not duplicating any morph files.
+  glm3_pb0gcm_site_ids:
+    command: extract_site_ids(
+      file_ind = "1_fetch/out/glm3_pb0gcm_temp_files.yml",
+      regex = glm3_pb0gcm_temp_file_regex,
+      regex_grp_nms = glm3_pb0gcm_temp_file_regex_grp_nms)
+  glm3_pb0nldas_site_ids:
+    command: extract_site_ids(
+      file_ind = "1_fetch/out/glm3_pb0nldas_temp_files.yml",
+      regex = glm3_pb0nldas_temp_file_regex,
+      regex_grp_nms = glm3_pb0nldas_temp_file_regex_grp_nms)
+  
   # Not much munging required right now
-  glm3_pb0gcm_proj_morphometry:
-    command: nml_to_morphometry(in_ind = '1_fetch/out/pb0_temp_projections_nml.rds.ind')
+  glm3_nml_morphometry_subset:
+    command: nml_to_morphometry_subset(
+      in_ind = '1_fetch/out/nml_list.rds.ind',
+      glm3_pb0gcm_site_ids,
+      glm3_pb0nldas_site_ids)
+  2_process/out/split_morph_files.ind:
+    command: split_morphometry(
+      final_target = target_name,
+      dir = I('2_process/out/morph_files'),
+      morphometry = glm3_nml_morphometry_subset)
+  

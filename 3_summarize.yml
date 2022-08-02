@@ -27,8 +27,9 @@ targets:
     # multi-state glm2 data release targets
       - 3_summarize/out/annual_metrics_glm2pb0.csv
       - 3_summarize/out/annual_metrics_glm2pball.csv
-    # climate projections glm3 data release target
-      - 3_summarize/out/annual_metrics_glm3pb0_gcms.csv
+    # climate projections & multi-state glm3 data release targets
+      - 3_summarize/out/annual_metrics_glm3_pb0gcm.csv
+      - 3_summarize/out/annual_metrics_glm3_pb0nldas.csv
 
 ##-- MN TOHA Data Release --##
 
@@ -128,28 +129,47 @@ targets:
 ##-- GLM3 + GCM Projections Data Release --##
 
   # Do all GCMs at once and combine into a single file
-  3_summarize/out/annual_metrics_glm3pb0_gcms.csv:
+  3_summarize/out/annual_metrics_glm3_pb0gcm.csv:
     command: do_annual_metrics_multi_lake(
       final_target = target_name,
-      site_file_yml = "1_fetch/out/pb0_temp_projections.yml",
+      site_file_yml = "1_fetch/out/glm3_pb0gcm_temp_files.yml",
       ice_file_yml = I(NULL),
-      n_cores = 79,
-      morphometry = glm3_pb0gcm_proj_morphometry,
+      morphometry_file_ind = "2_process/out/split_morph_files.ind",
+      n_cores = 65,
       temp_ranges = temp_ranges,
-      site_file_regex = I("(GLM)_(.*)_(.*).feather"),
-      tmpdir_suffix = I("_proj"),
+      site_file_regex = glm3_pb0gcm_temp_file_regex,
+      morph_file_regex = I("2_process/out/morph_files/(.*)_morphometry.rds.ind"),
+      tmpdir_suffix = I("_glm3_pb0gcm"),
       model_id_colname = I("GCM"), 
       suffix_as_model_id = I(TRUE),
+      max_group_size = 1000,
       '2_process/src/calculate_toha.R',
       '3_summarize/src/annual_thermal_metrics.R',
       '3_summarize/src/do_annual_thermal_metric_tasks.R')
   
   # Verify outputs through some plots:
-  3_summarize/out_plots/annual_metrics_plots_gcms.yml:
+  3_summarize/out_plots/annual_metrics_plots_glm3_pb0gcm.yml:
     command: plot_annual_metric_summaries(
       target_name,
-      in_file = "3_summarize/out/annual_metrics_glm3pb0_gcms.csv",
+      in_file = "3_summarize/out/annual_metrics_glm3_pb0gcm.csv",
       target_dir = I("3_summarize/out_plots"),
       model_id_colname = I("GCM"))
   
+  # Build annual metrics for NLDAS GLM output
+  3_summarize/out/annual_metrics_glm3_pb0nldas.csv:
+    command: do_annual_metrics_multi_lake(
+      final_target = target_name,
+      site_file_yml = "1_fetch/out/glm3_pb0nldas_temp_files.yml",
+      ice_file_yml = I(NULL),
+      morphometry_file_ind = "2_process/out/split_morph_files.ind",
+      n_cores = 60,
+      temp_ranges = temp_ranges,
+      site_file_regex = glm3_pb0nldas_temp_file_regex,
+      morph_file_regex = I("2_process/out/morph_files/(.*)_morphometry.rds.ind"),
+      tmpdir_suffix = I("_glm3_pb0nldas"), 
+      suffix_as_model_id = I(TRUE),
+      max_group_size = 1000,
+      '2_process/src/calculate_toha.R',
+      '3_summarize/src/annual_thermal_metrics.R',
+      '3_summarize/src/do_annual_thermal_metric_tasks.R')
  

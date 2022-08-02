@@ -29,9 +29,10 @@ targets:
       - 1_fetch/out/temperature_observations.zip
       - 1_fetch/out/pb0_matched_to_observations.zip
       - 1_fetch/out/pgdl_matched_to_observations.zip
-    # climate projections glm3 data release target
-      - 1_fetch/out/pb0_temp_projections.yml
-      - 1_fetch/out/pb0_temp_projections_nml.rds.ind
+    # glm3 climate projections & glm3 nldas targets
+      - 1_fetch/out/glm3_pb0gcm_temp_files.yml
+      - 1_fetch/out/glm3_pb0nldas_temp_files.yml
+      - 1_fetch/out/nml_list.rds.ind
   
   sb_dl_date:
    command: c(I("2021-04-08"))
@@ -182,25 +183,43 @@ targets:
   # date to refresh the list of files and hashes. Not the most
   # ideal process, but the function + practicality of this approach
   # is a bit of a compromise right now so we can complete this work.
-  caldera_access_date:
-    command: c(I('2022-02-16'))
+  caldera_access_date_nml:
+    command: c(I('2022-06-01'))
+  caldera_access_date_gcm:
+    command: c(I('2022-06-06'))
+  caldera_access_date_nldas:
+    command: c(I('2022-06-01'))
   
   # These files from our process-models pipeline are also pushed to ScienceBase
   #   item `6206d3c2d34ec05caca53071` but since we are running this on Tallgrass
   #   we have access to Caldera and can skip the need to re-download.
-  1_fetch/out/pb0_temp_projections.yml:
-    command: indicate_dir_files(
-      target_name, 
-      path = I('../lake-temperature-process-models/3_extract/out'), 
-      pattern = I('GLM_nhdhr_(.*)(GFDL|IPSL|MIROC5|MRI|ACCESS|CNRM).feather'))
-    depends: 
-      - caldera_access_date
-  
-  # These files from our process-models pipeline are also pushed to ScienceBase
-  #   item `6206d3c2d34ec05caca53071` but since we are running this on Tallgrass
-  #   we have access to Caldera and can skip the need to re-download.
-  1_fetch/out/pb0_temp_projections_nml.rds.ind:
+  # This NML file is shared between the GCMs and NLDAS runs.
+  1_fetch/out/nml_list.rds.ind:
     command: copy_caldera_files(target_name, files_in = I('../lake-temperature-process-models/1_prep/in/nml_list.rds'))
     depends: 
-      - caldera_access_date
-    
+      - caldera_access_date_nml
+  
+  # These files from our process-models pipeline are also pushed to ScienceBase
+  #   item `6206d3c2d34ec05caca53071` but since we are running this on Tallgrass
+  #   we have access to Caldera and can skip the need to re-download.
+  glm3_pb0gcm_temp_file_regex:
+    command: c(I('(GLM)_(nhdhr_.*)_(GFDL|IPSL|MIROC5|MRI|ACCESS|CNRM).feather'))
+  glm3_pb0gcm_temp_file_regex_grp_nms:
+    command: c(I('prefix'), I('site_id'), I('GCM'))
+  1_fetch/out/glm3_pb0gcm_temp_files.yml:
+    command: extract_glm_files(
+      target_name, 
+      glm_run_output_file = I('../lake-temperature-process-models/3_extract/out/GLM_GCM_summary.csv'))
+    depends: 
+      - caldera_access_date_gcm
+  
+  glm3_pb0nldas_temp_file_regex:
+    command: c(I('(GLM)_(nhdhr_.*)_(NLDAS).feather'))
+  glm3_pb0nldas_temp_file_regex_grp_nms:
+    command: c(I('prefix'), I('site_id'), I('driver'))
+  1_fetch/out/glm3_pb0nldas_temp_files.yml:
+    command: extract_glm_files(
+      target_name, 
+      glm_run_output_file = I('../lake-temperature-process-models/3_extract/out/GLM_NLDAS_summary.csv'))
+    depends: 
+      - caldera_access_date_nldas

@@ -1,5 +1,5 @@
 
-calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_file, temp_ranges_file, morphometry_ind, verbose = FALSE) {
+calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_file, temp_ranges_file, morphometry_ind, model_id = NULL, model_id_colname = NULL, verbose = FALSE) {
   
   if(!file.exists(site_file)) stop("File does not exist. If running summaries for GCM output, try changing `caldera_access_date` and build again.")
   
@@ -170,7 +170,13 @@ calculate_annual_metrics_per_lake <- function(out_ind, site_id, site_file, ice_f
     select(-ice_on_date_next) %>%
     # Move open_water_duration to end to match previous output
     relocate(open_water_duration, .after = last_col()) %>% 
-    left_join(annual_height_vol_days, by = "year")
+    left_join(annual_height_vol_days, by = "year") %>% {
+      # Only add this column when it is needed
+      if(!is.null(model_id_colname) & !is.null(model_id)) 
+        mutate(., model_id) %>% 
+        select(site_id, !!model_id_colname := model_id, everything())
+      else .
+    }
   
   if(verbose) {
     message(sprintf("Completed annual metrics for %s in %s min", site_id, 
