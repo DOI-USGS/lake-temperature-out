@@ -129,7 +129,7 @@ execute_single_group_task_plan <- function(final_target_subset, task_names_subse
   loop_tasks(task_plan = task_plan,
              task_makefile = task_makefile,
              # Don't specify `task_names` so that the final combine target is built
-             num_tries = 1,
+             num_tries = 2,
              n_cores = n_cores)
   
   # Clean up files created
