@@ -77,7 +77,11 @@ do_annual_metrics_multi_lake <- function(final_target, site_file_yml, ice_file_y
   task_groups <- select(tasks, task_id) %>% 
     unique() %>% 
     mutate(row_n = row_number()) %>% 
-    mutate(task_grp = ((row_n - 1) %/% max_group_size)+1)
+    mutate(task_grp = ((row_n - 1) %/% max_group_size)+1) %>% 
+    # This site had issues with ice for GCM-GFDL between 2050-2052. 
+    # Choosing to remove rather than investigate. Exclude after
+    # task groups have been set, so that rebuilds will not occur.
+    filter(!grepl('(GFDL|IPSL|MIROC5|MRI|ACCESS|CNRM)_nhdhr_86165097', task_id))
   
   source_vec <- c(...) # Need to combine before `purrr::map()`
   grp_inds <- task_groups %>% 
